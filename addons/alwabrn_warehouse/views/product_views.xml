@@ -1,0 +1,212 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_material_list" model="ir.ui.view">
+        <field name="name">alwabrn.material.list</field>
+        <field name="model">product.template</field>
+        <field name="priority">99</field>
+        <field name="arch" type="xml">
+            <list string="المواد والأصناف" decoration-warning="alw_needs_verification" create="0">
+                <field name="alw_sec_code"/>
+                <field name="name" string="الوصف (EN)"/>
+                <field name="alw_name_ar" optional="show"/>
+                <field name="categ_id" string="الفئة"/>
+                <field name="uom_id" string="الوحدة"/>
+                <field name="alw_reference_price" optional="show"/>
+                <field name="alw_qty_warehouse"/>
+                <field name="alw_qty_custody"/>
+                <field name="alw_qty_total" optional="show"/>
+                <field name="alw_needs_verification" widget="boolean_toggle" optional="show" readonly="1"/>
+                <field name="active" optional="hide"/>
+            </list>
+        </field>
+    </record>
+    <record id="view_material_form" model="ir.ui.view">
+        <field name="name">alwabrn.material.form</field>
+        <field name="model">product.template</field>
+        <field name="priority">99</field>
+        <field name="arch" type="xml">
+            <form string="بطاقة المادة" create="0">
+                <header>
+                    <button name="action_alw_stock_card" type="object" string="كرت الصنف (سجل الحركات)" class="btn-primary"/>
+                    <button name="action_alw_custody" type="object" string="عهد المواقع"/>
+                    <button name="action_alw_discrepancies" type="object" string="الفروقات"/>
+                </header>
+                <sheet>
+                    <div class="alert alert-warning" role="alert" invisible="not alw_needs_verification">
+                        <b>هذه المادة تحتاج تحقق: </b><field name="alw_verification_note" readonly="1" nolabel="1"/>
+                    </div>
+                    <div class="oe_title">
+                        <label for="alw_sec_code"/>
+                        <h1><field name="alw_sec_code" readonly="1"/></h1>
+                        <h3><field name="name" placeholder="الوصف بالإنجليزية"/></h3>
+                    </div>
+                    <group>
+                        <group string="بيانات المادة">
+                            <field name="alw_name_ar"/>
+                            <field name="categ_id" string="الفئة"/>
+                            <field name="uom_id" string="وحدة القياس الأساسية" readonly="1"/>
+                            <field name="uom_ids" widget="many2many_tags" string="وحدات بديلة معتمدة"/>
+                            <field name="alw_reference_price"/>
+                            <field name="active" string="نشطة" widget="boolean_toggle"/>
+                            <field name="alw_needs_verification"/>
+                        </group>
+                        <group string="الأرصدة (من Odoo مباشرة)">
+                            <field name="alw_qty_warehouse"/>
+                            <field name="alw_qty_custody"/>
+                            <field name="alw_qty_damaged"/>
+                            <field name="alw_qty_total"/>
+                            <field name="alw_last_reconciliation"/>
+                            <field name="alw_open_discrepancies"/>
+                        </group>
+                    </group>
+                    <group string="المصدر">
+                        <field name="alw_source_row"/>
+                        <field name="alw_source_formula"/>
+                        <field name="description" string="ملاحظات"/>
+                    </group>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+    <record id="view_material_search" model="ir.ui.view">
+        <field name="name">alwabrn.material.search</field>
+        <field name="model">product.template</field>
+        <field name="priority">99</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="alw_sec_code" string="كود SEC / الوصف"
+                       filter_domain="['|', '|', ('alw_sec_code', 'ilike', self), ('name', 'ilike', self), ('alw_name_ar', 'ilike', self)]"/>
+                <field name="categ_id" string="الفئة"/>
+                <field name="uom_id" string="الوحدة"/>
+                <filter name="needs_verification" string="يحتاج تحقق" domain="[('alw_needs_verification', '=', True)]"/>
+                <filter name="inactive" string="غير نشطة" domain="[('active', '=', False)]"/>
+                <group>
+                    <filter name="g_categ" string="الفئة" context="{'group_by': 'categ_id'}"/>
+                    <filter name="g_uom" string="الوحدة" context="{'group_by': 'uom_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+    <record id="action_materials" model="ir.actions.act_window">
+        <field name="name">المواد والأصناف</field>
+        <field name="res_model">product.template</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('alw_is_material', '=', True)]</field>
+        <field name="search_view_id" ref="view_material_search"/>
+        <field name="view_ids" eval="[(5, 0, 0), (0, 0, {'view_mode': 'list', 'view_id': ref('view_material_list')}), (0, 0, {'view_mode': 'form', 'view_id': ref('view_material_form')})]"/>
+    </record>
+
+    <!-- current balance -->
+    <record id="view_balance_list" model="ir.ui.view">
+        <field name="name">alwabrn.stock.balance.list</field>
+        <field name="model">alwabrn.stock.balance</field>
+        <field name="arch" type="xml">
+            <list string="الرصيد الحالي">
+                <field name="sec_code"/>
+                <field name="product_id"/>
+                <field name="categ_id" optional="show"/>
+                <field name="role"/>
+                <field name="location_id"/>
+                <field name="site_id" optional="show"/>
+                <field name="quantity"/>
+                <field name="uom_id"/>
+                <field name="value" sum="القيمة المرجعية"/>
+            </list>
+        </field>
+    </record>
+    <record id="view_balance_search" model="ir.ui.view">
+        <field name="name">alwabrn.stock.balance.search</field>
+        <field name="model">alwabrn.stock.balance</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="sec_code" filter_domain="['|', ('sec_code', 'ilike', self), ('product_id', 'ilike', self)]"/>
+                <field name="categ_id"/>
+                <field name="site_id"/>
+                <filter name="wh" string="المستودع" domain="[('role', '=', 'warehouse')]"/>
+                <filter name="custody" string="عهد المواقع" domain="[('role', '=', 'custody')]"/>
+                <filter name="damaged" string="تالف" domain="[('role', '=', 'damaged')]"/>
+                <group>
+                    <filter name="g_role" string="نوع الرصيد" context="{'group_by': 'role'}"/>
+                    <filter name="g_categ" string="الفئة" context="{'group_by': 'categ_id'}"/>
+                    <filter name="g_loc" string="الموقع المخزني" context="{'group_by': 'location_id'}"/>
+                    <filter name="g_uom" string="الوحدة" context="{'group_by': 'uom_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+    <record id="view_balance_pivot" model="ir.ui.view">
+        <field name="name">alwabrn.stock.balance.pivot</field>
+        <field name="model">alwabrn.stock.balance</field>
+        <field name="arch" type="xml">
+            <pivot string="الرصيد الحالي">
+                <field name="categ_id" type="row"/>
+                <field name="role" type="col"/>
+                <field name="value" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+    <record id="action_balance" model="ir.actions.act_window">
+        <field name="name">الرصيد الحالي</field>
+        <field name="res_model">alwabrn.stock.balance</field>
+        <field name="view_mode">list,pivot</field>
+        <field name="context">{'search_default_wh': 1}</field>
+    </record>
+
+    <!-- stock card -->
+    <record id="view_stock_card_list" model="ir.ui.view">
+        <field name="name">alwabrn.stock.card.line.list</field>
+        <field name="model">alwabrn.stock.card.line</field>
+        <field name="arch" type="xml">
+            <list string="كرت الصنف" decoration-success="delta_warehouse &gt; 0" decoration-danger="delta_warehouse &lt; 0">
+                <field name="date"/>
+                <field name="sec_code"/>
+                <field name="product_id" optional="hide"/>
+                <field name="tx_type"/>
+                <field name="transaction_id"/>
+                <field name="reference" optional="show"/>
+                <field name="document_ref" optional="show"/>
+                <field name="location_id"/>
+                <field name="location_dest_id"/>
+                <field name="site_id" optional="show"/>
+                <field name="quantity"/>
+                <field name="uom_id"/>
+                <field name="delta_warehouse" sum="صافي المستودع"/>
+                <field name="delta_custody" sum="صافي العهد" optional="show"/>
+                <field name="balance_warehouse"/>
+                <field name="balance_company" optional="show"/>
+                <button name="action_open_transaction" type="object" string="المستند" icon="fa-external-link" invisible="not transaction_id"/>
+            </list>
+        </field>
+    </record>
+    <record id="view_stock_card_search" model="ir.ui.view">
+        <field name="name">alwabrn.stock.card.line.search</field>
+        <field name="model">alwabrn.stock.card.line</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="sec_code" filter_domain="['|', ('sec_code', 'ilike', self), ('product_id', 'ilike', self)]"/>
+                <field name="site_id"/>
+                <field name="project_id"/>
+                <field name="tx_type"/>
+                <filter name="date" string="التاريخ" date="date"/>
+                <group>
+                    <filter name="g_product" string="المادة" context="{'group_by': 'product_id'}"/>
+                    <filter name="g_type" string="نوع الحركة" context="{'group_by': 'tx_type'}"/>
+                    <filter name="g_date" string="اليوم" context="{'group_by': 'date:day'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+    <record id="view_stock_card_pivot" model="ir.ui.view">
+        <field name="name">alwabrn.stock.card.line.pivot</field>
+        <field name="model">alwabrn.stock.card.line</field>
+        <field name="arch" type="xml">
+            <pivot><field name="tx_type" type="row"/><field name="delta_warehouse" type="measure"/></pivot>
+        </field>
+    </record>
+    <record id="action_stock_card" model="ir.actions.act_window">
+        <field name="name">سجل حركات المواد (كرت الصنف)</field>
+        <field name="res_model">alwabrn.stock.card.line</field>
+        <field name="view_mode">list,pivot</field>
+    </record>
+</odoo>

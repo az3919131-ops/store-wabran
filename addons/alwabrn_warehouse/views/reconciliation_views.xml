@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_recon_list" model="ir.ui.view">
+        <field name="name">alwabrn.reconciliation.list</field>
+        <field name="model">alwabrn.reconciliation</field>
+        <field name="arch" type="xml">
+            <list string="المطابقات">
+                <field name="name"/><field name="date"/><field name="location_id"/>
+                <field name="book_snapshot_id"/><field name="physical_snapshot_id"/>
+                <field name="match_count"/><field name="diff_count" decoration-danger="diff_count &gt; 0"/>
+                <field name="incomplete_count" optional="show"/>
+                <field name="state" widget="badge" decoration-success="state == 'closed'" decoration-info="state == 'computed'"/>
+            </list>
+        </field>
+    </record>
+    <record id="view_recon_form" model="ir.ui.view">
+        <field name="name">alwabrn.reconciliation.form</field>
+        <field name="model">alwabrn.reconciliation</field>
+        <field name="arch" type="xml">
+            <form string="المطابقة والحصر الدفتري">
+                <header>
+                    <button name="action_compute" type="object" string="احتساب المطابقة" class="btn-primary" invisible="state == 'closed'"/>
+                    <button name="action_close" type="object" string="إغلاق المطابقة" invisible="state != 'computed'"
+                            groups="alwabrn_warehouse.group_alw_manager"/>
+                    <field name="state" widget="statusbar"/>
+                </header>
+                <sheet>
+                    <div class="alert alert-info" role="alert">
+                        المطابقة لا تعدل المخزون. أي تسوية تتطلب طلباً بسبب موثق ثم اعتماد المدير، وتنفذ عبر تسوية جرد Odoo.
+                        الخانة غير المتوفرة تعرض «غير متوفر» ولا تعامل كصفر.
+                    </div>
+                    <div class="oe_title"><h1><field name="name"/></h1></div>
+                    <group>
+                        <group>
+                            <field name="date" readonly="state == 'closed'"/>
+                            <field name="cutoff" readonly="state == 'closed'"/>
+                            <field name="location_id" readonly="state == 'closed'" options="{'no_create': True}"/>
+                            <field name="scope" readonly="state == 'closed'"/>
+                        </group>
+                        <group>
+                            <field name="book_snapshot_id" readonly="state == 'closed'" options="{'no_create': True}"/>
+                            <field name="physical_snapshot_id" readonly="state == 'closed'" options="{'no_create': True}"/>
+                            <field name="match_count"/><field name="diff_count"/><field name="incomplete_count"/>
+                            <field name="computed_on"/>
+                        </group>
+                    </group>
+                    <field name="line_ids">
+                        <list create="0" delete="0" editable="bottom" decoration-danger="status == 'diff'" decoration-success="status == 'match'"
+                              decoration-muted="status == 'incomplete'" default_order="status, sec_code">
+                            <field name="sec_code" readonly="1"/>
+                            <field name="product_id" readonly="1"/>
+                            <field name="uom_id"/>
+                            <field name="odoo_qty"/>
+                            <field name="has_book" column_invisible="1"/>
+                            <field name="has_physical" column_invisible="1"/>
+                            <field name="book_qty" invisible="not has_book"/>
+                            <field name="physical_qty" invisible="not has_physical"/>
+                            <field name="difference"/>
+                            <field name="diff_book_physical" optional="hide"/>
+                            <field name="status" widget="badge" decoration-success="status == 'match'" decoration-danger="status == 'diff'"/>
+                            <field name="classification" readonly="resolution == 'adjusted'"/>
+                            <field name="analysis" optional="show"/>
+                            <field name="note" readonly="resolution == 'adjusted'"/>
+                            <field name="resolution" readonly="1" widget="badge"/>
+                            <button name="action_view_movements" type="object" string="الحركات" icon="fa-list"/>
+                            <button name="action_mark_explained" type="object" string="تم التفسير" icon="fa-check"
+                                    invisible="status != 'diff' or resolution != 'open'"/>
+                            <button name="action_request_adjustment" type="object" string="طلب تسوية" icon="fa-balance-scale"
+                                    invisible="status != 'diff' or resolution not in ('open', 'explained')"
+                                    confirm="سيتم إنشاء طلب تسوية بانتظار اعتماد المدير. متابعة؟"/>
+                        </list>
+                    </field>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+    <record id="action_recon" model="ir.actions.act_window">
+        <field name="name">الجرد والمطابقة</field>
+        <field name="res_model">alwabrn.reconciliation</field>
+        <field name="view_mode">list,form</field>
+    </record>
+    <record id="action_recon_new" model="ir.actions.act_window">
+        <field name="name">مطابقة الرصيد</field>
+        <field name="res_model">alwabrn.reconciliation</field>
+        <field name="view_mode">form</field>
+    </record>
+
+    <record id="view_recon_line_list" model="ir.ui.view">
+        <field name="name">alwabrn.reconciliation.line.list</field>
+        <field name="model">alwabrn.reconciliation.line</field>
+        <field name="arch" type="xml">
+            <list string="فروقات الجرد" create="0" delete="0" decoration-danger="status == 'diff' and resolution == 'open'">
+                <field name="date"/><field name="reconciliation_id"/><field name="sec_code"/><field name="product_id"/>
+                <field name="odoo_qty"/><field name="has_book" column_invisible="1"/><field name="has_physical" column_invisible="1"/>
+                <field name="book_qty" invisible="not has_book"/><field name="physical_qty" invisible="not has_physical"/>
+                <field name="difference"/><field name="status" widget="badge"/><field name="classification"/>
+                <field name="resolution" widget="badge"/><field name="note" optional="show"/>
+                <field name="adjustment_tx_id" optional="show"/>
+                <button name="action_view_movements" type="object" string="الحركات" icon="fa-list"/>
+            </list>
+        </field>
+    </record>
+    <record id="view_recon_line_search" model="ir.ui.view">
+        <field name="name">alwabrn.reconciliation.line.search</field>
+        <field name="model">alwabrn.reconciliation.line</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="sec_code" filter_domain="['|', ('sec_code', 'ilike', self), ('product_id', 'ilike', self)]"/>
+                <filter name="diff" string="فروقات" domain="[('status', '=', 'diff')]"/>
+                <filter name="open" string="مفتوحة" domain="[('resolution', 'in', ('open', 'adjust_pending'))]"/>
+                <filter name="date" string="التاريخ" date="date"/>
+                <group>
+                    <filter name="g_cls" string="التصنيف" context="{'group_by': 'classification'}"/>
+                    <filter name="g_res" string="المعالجة" context="{'group_by': 'resolution'}"/>
+                    <filter name="g_product" string="المادة" context="{'group_by': 'product_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+    <record id="action_recon_lines" model="ir.actions.act_window">
+        <field name="name">فروقات الجرد</field>
+        <field name="res_model">alwabrn.reconciliation.line</field>
+        <field name="view_mode">list</field>
+        <field name="context">{'search_default_diff': 1, 'search_default_open': 1}</field>
+    </record>
+</odoo>

@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_integration_list" model="ir.ui.view">
+        <field name="name">alwabrn.integration.account.list</field>
+        <field name="model">alwabrn.integration.account</field>
+        <field name="arch" type="xml">
+            <list string="حالة التكاملات" create="0" delete="0">
+                <field name="name"/><field name="kind"/>
+                <field name="state" widget="badge" decoration-success="state == 'connected'" decoration-warning="state == 'auth_required'"
+                       decoration-info="state == 'pending_config'" decoration-danger="state == 'disconnected'"/>
+                <field name="state_note"/><field name="last_sync"/><field name="last_error"/><field name="retry_count"/>
+            </list>
+        </field>
+    </record>
+    <record id="view_integration_form" model="ir.ui.view">
+        <field name="name">alwabrn.integration.account.form</field>
+        <field name="model">alwabrn.integration.account</field>
+        <field name="arch" type="xml">
+            <form string="حساب تكامل" create="0" delete="0">
+                <header>
+                    <button name="action_open_secret_wizard" type="object" string="إدخال / تحديث بيانات الاعتماد" class="btn-primary"
+                            invisible="kind not in ('whatsapp', 'ai')" groups="alwabrn_warehouse.group_alw_admin"/>
+                    <button name="action_test_connection" type="object" string="اختبار الاتصال" groups="alwabrn_warehouse.group_alw_admin"/>
+                    <field name="state" widget="statusbar"/>
+                </header>
+                <sheet>
+                    <div class="alert alert-info" role="alert"><field name="state_note" nolabel="1"/></div>
+                    <group>
+                        <group>
+                            <field name="name"/><field name="kind" readonly="1"/><field name="active" widget="boolean_toggle"/>
+                        </group>
+                        <group>
+                            <field name="last_sync"/><field name="last_error_on"/><field name="last_error"/><field name="retry_count"/>
+                        </group>
+                    </group>
+                    <group string="واتساب للأعمال (Meta Cloud API)" invisible="kind != 'whatsapp'">
+                        <field name="webhook_url"/>
+                        <field name="wa_phone_number_id"/>
+                        <field name="has_access_token"/><field name="has_app_secret"/><field name="has_verify_token"/>
+                        <field name="wa_webhook_verified"/>
+                        <field name="allowed_senders" placeholder="9665XXXXXXXX (سطر لكل رقم مصرح له)"/>
+                        <field name="wa_notifications"/>
+                        <field name="wa_notify_numbers" invisible="not wa_notifications"/>
+                    </group>
+                    <group string="البريد الإلكتروني" invisible="kind != 'email'">
+                        <field name="fetchmail_server_id" context="{'default_object_id': %(alwabrn_warehouse.model_alwabrn_import_batch)d}"/>
+                        <field name="mail_server_id"/>
+                        <field name="allowed_senders" placeholder="name@example.com (سطر لكل مرسل مصرح له)"/>
+                        <div colspan="2" class="text-muted">
+                            أنشئ خادم بريد وارد من نوع Gmail أو Outlook (مصادقة OAuth 2.0 — لا تُحفظ كلمات مرور)، وحدد المجلد/التصنيف المخصص للمخزون،
+                            واختر «إنشاء سجل جديد» = دفعة إدخال موحدة. لا يقرأ النظام صندوق البريد كاملاً.
+                        </div>
+                    </group>
+                    <group string="AI" invisible="kind != 'ai'"><field name="has_api_key"/></group>
+                    <notebook>
+                        <page string="سجل الأحداث">
+                            <field name="log_ids" readonly="1"><list><field name="create_date"/><field name="level"/><field name="message"/></list></field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+    <record id="action_integrations" model="ir.actions.act_window">
+        <field name="name">إعدادات التكامل (البريد وواتساب و OCR)</field>
+        <field name="res_model">alwabrn.integration.account</field>
+        <field name="view_mode">list,form</field>
+    </record>
+    <record id="view_integration_message_list" model="ir.ui.view">
+        <field name="name">alwabrn.integration.message.list</field>
+        <field name="model">alwabrn.integration.message</field>
+        <field name="arch" type="xml">
+            <list string="سجل الرسائل" create="0">
+                <field name="message_date"/><field name="channel"/><field name="direction"/><field name="sender"/>
+                <field name="body"/><field name="external_id" optional="show"/><field name="batch_id"/>
+                <field name="state" widget="badge" decoration-success="state == 'processed'" decoration-danger="state in ('error', 'unauthorized')"/>
+                <field name="error" optional="show"/>
+            </list>
+        </field>
+    </record>
+    <record id="action_integration_messages" model="ir.actions.act_window">
+        <field name="name">سجل رسائل واتساب والبريد</field>
+        <field name="res_model">alwabrn.integration.message</field>
+        <field name="view_mode">list</field>
+    </record>
+</odoo>

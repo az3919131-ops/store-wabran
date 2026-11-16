@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <!-- Units of the SEC catalog that have no approved conversion: independent reference units -->
+    <record id="uom_kit" model="uom.uom">
+        <field name="name">KIT</field>
+        <field name="alw_code">KIT</field>
+        <field name="relative_factor">1</field>
+    </record>
+    <record id="uom_roll" model="uom.uom">
+        <field name="name">R</field>
+        <field name="alw_code">R</field>
+        <field name="relative_factor">1</field>
+    </record>
+    <record id="uom_drum" model="uom.uom">
+        <field name="name">DRUM</field>
+        <field name="alw_code">DRUM</field>
+        <field name="relative_factor">1</field>
+    </record>
+
+    <record id="categ_sec_materials" model="product.category">
+        <field name="name">مواد العقد الموحد SEC</field>
+    </record>
+
+    <record id="loc_owner" model="stock.location">
+        <field name="name">الشركة السعودية للكهرباء (مالك المواد)</field>
+        <field name="usage">supplier</field>
+        <field name="alw_role">owner</field>
+    </record>
+    <record id="loc_custody_root" model="stock.location">
+        <field name="name">عهد المواقع</field>
+        <field name="usage">view</field>
+        <field name="alw_role">custody_root</field>
+    </record>
+    <record id="loc_consumption" model="stock.location">
+        <field name="name">استهلاك المشاريع (مواد مركبة)</field>
+        <field name="usage">customer</field>
+        <field name="alw_role">consumption</field>
+    </record>
+    <record id="loc_damaged" model="stock.location">
+        <field name="name">المواد التالفة</field>
+        <field name="usage">internal</field>
+        <field name="alw_role">damaged</field>
+    </record>
+    <record id="loc_scrap" model="stock.location">
+        <field name="name">سكراب الوبران</field>
+        <field name="usage">inventory</field>
+        <field name="alw_role">scrap</field>
+    </record>
+
+    <record id="seq_transaction" model="ir.sequence">
+        <field name="name">حركة مواد</field>
+        <field name="code">alwabrn.transaction</field>
+        <field name="prefix">TX/%(year)s/</field>
+        <field name="padding">5</field>
+    </record>
+    <record id="seq_batch" model="ir.sequence">
+        <field name="name">دفعة إدخال</field>
+        <field name="code">alwabrn.import.batch</field>
+        <field name="prefix">IMP/%(year)s/</field>
+        <field name="padding">5</field>
+    </record>
+    <record id="seq_snapshot" model="ir.sequence">
+        <field name="name">كشف رصيد</field>
+        <field name="code">alwabrn.snapshot</field>
+        <field name="prefix">BAL/%(year)s/</field>
+        <field name="padding">5</field>
+    </record>
+    <record id="seq_recon" model="ir.sequence">
+        <field name="name">مطابقة</field>
+        <field name="code">alwabrn.reconciliation</field>
+        <field name="prefix">REC/%(year)s/</field>
+        <field name="padding">5</field>
+    </record>
+
+    <record id="integration_whatsapp" model="alwabrn.integration.account">
+        <field name="name">واتساب للأعمال</field>
+        <field name="kind">whatsapp</field>
+    </record>
+    <record id="integration_email" model="alwabrn.integration.account">
+        <field name="name">البريد الإلكتروني</field>
+        <field name="kind">email</field>
+    </record>
+    <record id="integration_ocr" model="alwabrn.integration.account">
+        <field name="name">قراءة الصور OCR</field>
+        <field name="kind">ocr</field>
+    </record>
+    <record id="integration_ai" model="alwabrn.integration.account">
+        <field name="name">المساعد الذكي / AI Vision</field>
+        <field name="kind">ai</field>
+    </record>
+    <record id="param_ocr_provider" model="ir.config_parameter">
+        <field name="key">alwabrn.ocr_provider</field>
+        <field name="value">tesseract</field>
+    </record>
+</odoo>

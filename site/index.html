@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>نظام الوبران الذكي لإدارة المواد والمستودعات</title>
+<meta name="description" content="Al Wabran Smart Inventory — إضافة Odoo 19 لإدارة مستودع العقد الموحد للشركة السعودية للكهرباء، فرع نجران.">
+<style>
+:root{--g:#0B5345;--b:#1F4E78;--bg:#f4f6f5;--card:#fff;--ink:#1b2631;--mut:#566573;--line:#dfe6e3;--ok:#1E8449;--warn:#9A7D0A;--key:#6C3483}
+@media (prefers-color-scheme:dark){:root{--bg:#0f1715;--card:#17211e;--ink:#e8efec;--mut:#9fb0aa;--line:#2a3833;--g:#12806a;--b:#5DADE2;--ok:#58D68D;--warn:#F4D03F;--key:#BB8FCE}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:"Segoe UI",Tahoma,"Noto Sans Arabic",sans-serif;line-height:1.8}
+header{background:var(--g);color:#fff;padding:36px 16px}
+.wrap{max-width:1080px;margin:0 auto;padding:0 16px}
+h1{margin:0 0 6px;font-size:clamp(1.5rem,4vw,2.3rem)}h2{color:var(--g);margin:36px 0 12px;font-size:1.35rem}
+header p{margin:4px 0;opacity:.92}
+.notice{background:var(--card);border:1px solid var(--line);border-inline-start:6px solid var(--warn);border-radius:10px;padding:14px 16px;margin:20px 0}
+.btns{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px}
+.btn{display:inline-block;padding:10px 18px;border-radius:10px;background:#fff;color:#0B5345;font-weight:700;text-decoration:none}
+.btn.alt{background:transparent;color:#fff;border:2px solid #fff}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px}
+.card b{color:var(--g)}
+.shots{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
+figure{margin:0;background:var(--card);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+figure img{width:100%;display:block}figcaption{padding:8px 12px;color:var(--mut);font-size:.9rem}
+.tablewrap{overflow-x:auto;background:var(--card);border:1px solid var(--line);border-radius:10px}
+table{border-collapse:collapse;width:100%;min-width:560px}th,td{padding:8px 12px;border-bottom:1px solid var(--line);text-align:right;vertical-align:top}
+th{background:var(--b);color:#fff}
+.t{font-weight:700;white-space:nowrap}.ok{color:var(--ok)}.key{color:var(--key)}.warn{color:var(--warn)}
+pre{background:#10201c;color:#d5f5e3;padding:14px;border-radius:10px;overflow-x:auto;direction:ltr;text-align:left;font-size:.9rem}
+footer{margin:48px 0 24px;text-align:center;color:var(--mut)}
+</style>
+</head>
+<body>
+<header><div class="wrap">
+<h1>نظام الوبران الذكي لإدارة المواد والمستودعات</h1>
+<p>Al Wabran Smart Inventory — إضافة <b>Odoo 19 Community</b> باسم <code>alwabrn_warehouse</code></p>
+<p>شركة الوبران · العقد الموحد للشركة السعودية للكهرباء · فرع نجران</p>
+<div class="btns">
+<a class="btn" href="https://github.com/az3919131-ops/store-wabran">الكود على GitHub</a>
+<a class="btn alt" href="https://github.com/az3919131-ops/store-wabran/blob/main/docs/USER_GUIDE_AR.md">دليل المستخدم</a>
+<a class="btn alt" href="https://github.com/az3919131-ops/store-wabran/blob/main/docs/TECHNICAL_REPORT.md">التقرير الفني</a>
+</div></div></header>
+<div class="wrap">
+<div class="notice"><b>ما هذه الصفحة؟</b> صفحة تعريفية بالمشروع. النظام نفسه تطبيق خادم (Odoo + PostgreSQL) ولا يعمل على استضافة ثابتة مثل Netlify؛
+يُشغَّل عبر Docker على جهاز/خادم الشركة (التعليمات بالأسفل). اللقطات التالية حقيقية من نسخة التطوير العاملة ببيانات تجريبية.</div>
+
+<h2>الفكرة</h2>
+<div class="grid">
+<div class="card"><b>دفتر مخزون واحد</b><br>كل حركة معتمدة ترحَّل كمستند مخزون Odoo أصلي. لا دفتر موازٍ ولا تعديل كميات بـ SQL.</div>
+<div class="card"><b>إدخال من 7 قنوات</b><br>يدوي · لصق · كاميرا · صور/PDF · Excel · واتساب · بريد — كلها تمر بمحرك مراجعة واعتماد واحد.</div>
+<div class="card"><b>الرصيد اليومي ليس استلاماً</b><br>كشف الرصيد الدفتري والجرد الفعلي يُحفظان للمطابقة ولا يغيران المخزون.</div>
+<div class="card"><b>مطابقة ثلاثية</b><br>رصيد Odoo × الدفتري × الفعلي عند وقت قطع بتوقيت الرياض، مع تصنيف مقترح للفروقات واعتماد للتسويات.</div>
+<div class="card"><b>عهد المواقع</b><br>مصروف / مرتجع / مستهلك / قائم لكل موقع وأمر عمل. الصرف للموقع لا يُحسب استهلاكاً.</div>
+<div class="card"><b>18 تقريراً</b><br>Excel و PDF بالعربية، إرسال بالبريد وجدولة، ولوحة تحليل تفاعلية.</div>
+</div>
+
+<h2>لقطات من النظام</h2>
+<div class="shots">
+<figure><img src="img/home.jpg" alt="الصفحة الرئيسية" loading="lazy"><figcaption>الرئيسية: مؤشرات حية وأزرار كبيرة</figcaption></figure>
+<figure><img src="img/analytics.jpg" alt="لوحة التحليل" loading="lazy"><figcaption>لوحة تحليل المخزون والفلاتر</figcaption></figure>
+<figure><img src="img/camera.jpg" alt="تصوير الدفاتر" loading="lazy"><figcaption>تصوير دفتر المواد من الجوال</figcaption></figure>
+<figure><img src="img/batches.jpg" alt="دفعات الإدخال" loading="lazy"><figcaption>الإدخال الذكي: دفعات المراجعة والاعتماد</figcaption></figure>
+<figure><img src="img/diff.jpg" alt="الفروقات" loading="lazy"><figcaption>فروقات الجرد مع التصنيف المقترح</figcaption></figure>
+<figure><img src="img/custody.jpg" alt="عهد المواقع" loading="lazy"><figcaption>عهد المواقع</figcaption></figure>
+<figure><img src="img/assistant.jpg" alt="المساعد الذكي" loading="lazy"><figcaption>مساعد الوبران: إجابات من قاعدة البيانات مع المصدر</figcaption></figure>
+<figure><img src="img/mobile.jpg" alt="الجوال" loading="lazy"><figcaption>العرض على الجوال</figcaption></figure>
+</div>
+
+<h2>حالة الميزات — بصدق</h2>
+<div class="tablewrap"><table>
+<tr><th>الميزة</th><th>الحالة</th><th>ملاحظة</th></tr>
+<tr><td>كتالوج المواد (624 مادة / 41 فئة)، الحركات، العهد، المطابقة، الصلاحيات، سجل التدقيق</td><td class="t ok">منفذة ومختبرة</td><td>34 اختباراً آلياً — 0 فشل</td></tr>
+<tr><td>لصق البيانات، استيراد Excel/CSV، واتساب اليدوي، تقارير Excel الـ18، الجدولة</td><td class="t ok">منفذة ومختبرة</td><td></td></tr>
+<tr><td>الواجهة العربية، الكاميرا، الرسوم، PDF</td><td class="t ok">منفذة ومجربة يدوياً</td><td>لم تجرب على جوال فعلي بعد</td></tr>
+<tr><td>OCR</td><td class="t warn">بقيود</td><td>Tesseract للنص المطبوع (عربي/إنجليزي). خط اليد يحتاج مزود AI Vision</td></tr>
+<tr><td>WhatsApp Business · Gmail/Outlook OAuth · AI Vision</td><td class="t key">بانتظار بيانات الاعتماد</td><td>الموصلات مكتوبة ومختبرة بمحاكاة؛ لم تربط بالخدمات الحقيقية</td></tr>
+<tr><td>إرسال التقارير بالبريد</td><td class="t warn">يحتاج خادم بريد صادر</td><td>المنطق وسجل الإرسال جاهزان</td></tr>
+</table></div>
+
+<h2>التشغيل على أي جهاز</h2>
+<pre>git clone https://github.com/az3919131-ops/store-wabran.git
+cd store-wabran
+cp deploy/.env.example .env        # غيّر كلمات المرور
+docker compose -f deploy/docker-compose.yml --env-file .env up -d --build
+# ثم افتح  http://localhost:8069</pre>
+<p>ملف «المواد الموحدة 2021.xlsx» غير مرفوع للمستودع العام لاحتوائه على أسعار العقد — يُرفع من داخل النظام: الإعدادات ← استيراد كتالوج المواد.</p>
+
+<footer>Project manager  Eng  Ahmed Zahran</footer>
+</div>
+</body>
+</html>

@@ -1,0 +1,3 @@
+# Netlify hosts only the static project page. The Odoo application itself needs a server (see deploy/).
+[build]
+  publish = "site"

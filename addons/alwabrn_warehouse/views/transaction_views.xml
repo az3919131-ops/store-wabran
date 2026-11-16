@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_tx_list" model="ir.ui.view">
+        <field name="name">alwabrn.transaction.list</field>
+        <field name="model">alwabrn.transaction</field>
+        <field name="arch" type="xml">
+            <list string="حركات المواد" decoration-info="state == 'draft'" decoration-warning="state == 'pending'"
+                  decoration-muted="state in ('rejected', 'reversed')">
+                <field name="name"/>
+                <field name="date"/>
+                <field name="tx_type"/>
+                <field name="site_id" optional="show"/>
+                <field name="project_id" optional="show"/>
+                <field name="work_order" optional="show"/>
+                <field name="document_ref" optional="show"/>
+                <field name="line_count"/>
+                <field name="employee_id" optional="show"/>
+                <field name="approver_id" optional="show"/>
+                <field name="state" widget="badge" decoration-success="state == 'posted'" decoration-warning="state == 'pending'"
+                       decoration-danger="state == 'rejected'"/>
+            </list>
+        </field>
+    </record>
+    <record id="view_tx_form" model="ir.ui.view">
+        <field name="name">alwabrn.transaction.form</field>
+        <field name="model">alwabrn.transaction</field>
+        <field name="arch" type="xml">
+            <form string="حركة مواد">
+                <header>
+                    <button name="action_submit" type="object" string="إرسال للاعتماد" class="btn-primary" invisible="state != 'draft'"/>
+                    <button name="action_approve" type="object" string="اعتماد وترحيل للمخزون" class="btn-success"
+                            invisible="state not in ('draft', 'pending')" groups="alwabrn_warehouse.group_alw_manager"
+                            confirm="سيتم تحديث أرصدة Odoo الرسمية. متابعة؟"/>
+                    <button name="action_reject" type="object" string="رفض" invisible="state not in ('draft', 'pending')"
+                            groups="alwabrn_warehouse.group_alw_manager"/>
+                    <button name="action_reverse" type="object" string="عكس الحركة" invisible="state != 'posted'"
+                            groups="alwabrn_warehouse.group_alw_manager"
+                            confirm="سيتم إنشاء حركة عكسية مرحّلة. الحركة الأصلية لا تُحذف. متابعة؟"/>
+                    <button name="action_reset_draft" type="object" string="إعادة لمسودة" invisible="state != 'rejected'"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,pending,posted"/>
+                </header>
+                <sheet>
+                    <div class="alert alert-warning" role="alert" invisible="not possible_duplicate_ids">
+                        تنبيه: توجد حركات مشابهة في نفس اليوم (قد تكون حركة حقيقية أخرى أو تكراراً) — راجع قبل الاعتماد:
+                        <field name="possible_duplicate_ids" widget="many2many_tags" readonly="1"/>
+                    </div>
+                    <div class="oe_title"><h1><field name="name"/></h1></div>
+                    <group>
+                        <group>
+                            <field name="tx_type" readonly="state != 'draft'"/>
+                            <field name="date" readonly="state != 'draft'"/>
+                            <field name="site_id" readonly="state != 'draft'"
+                                   invisible="tx_type in ('opening', 'receipt', 'issue', 'return_out', 'adj_plus', 'adj_minus', 'transfer')"
+                                   required="tx_type in ('issue_site', 'return_in', 'consume')"/>
+                            <field name="project_id" readonly="state != 'draft'"/>
+                            <field name="work_order" readonly="state != 'draft'"/>
+                        </group>
+                        <group>
+                            <field name="document_ref" readonly="state in ('posted', 'reversed')"/>
+                            <field name="location_src_id" readonly="state != 'draft'" options="{'no_create': True}"/>
+                            <field name="location_dest_id" readonly="state != 'draft'" options="{'no_create': True}"/>
+                            <field name="employee_id"/>
+                            <field name="approver_id" invisible="not approver_id"/>
+                            <field name="approved_on" invisible="not approved_on"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="الأصناف" name="lines">
+                            <field name="line_ids" readonly="state != 'draft'">
+                                <list editable="bottom">
+                                    <field name="sequence" widget="handle"/>
+                                    <field name="product_id" options="{'no_create': True}" placeholder="ابحث بكود SEC أو الوصف"/>
+                                    <field name="sec_code"/>
+                                    <field name="quantity"/>
+                                    <field name="uom_id" options="{'no_create': True}"/>
+                                    <field name="qty_product_uom" optional="show"/>
+                                    <field name="product_uom_id" optional="show"/>
+                                    <field name="available_qty" optional="show"/>
+                                    <field name="previous_qty" optional="hide"/>
+                                    <field name="note"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="المستندات والملاحظات" name="docs">
+                            <group>
+                                <field name="reason" required="tx_type in ('adj_plus', 'adj_minus')"/>
+                                <field name="note"/>
+                                <field name="source_document_ids" widget="many2many_tags"/>
+                                <field name="batch_id"/>
+                            </group>
+                        </page>
+                        <page string="سجل Odoo" name="odoo" invisible="state not in ('posted', 'reversed')">
+                            <group>
+                                <field name="picking_id"/>
+                                <field name="reversal_of_id" invisible="not reversal_of_id"/>
+                                <field name="reversed_by_id" invisible="not reversed_by_id"/>
+                                <field name="reconciliation_line_id" invisible="not reconciliation_line_id"/>
+                            </group>
+                            <field name="move_ids" readonly="1">
+                                <list>
+                                    <field name="reference"/><field name="product_id"/><field name="location_id"/>
+                                    <field name="location_dest_id"/><field name="quantity"/><field name="product_uom"/>
+                                    <field name="date"/><field name="state"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+    <record id="view_tx_search" model="ir.ui.view">
+        <field name="name">alwabrn.transaction.search</field>
+        <field name="model">alwabrn.transaction</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name" filter_domain="['|', '|', ('name', 'ilike', self), ('document_ref', 'ilike', self), ('line_ids.sec_code', 'ilike', self)]" string="رقم / مستند / كود SEC"/>
+                <field name="site_id"/>
+                <field name="project_id"/>
+                <field name="work_order"/>
+                <filter name="pending" string="بانتظار الاعتماد" domain="[('state', 'in', ('draft', 'pending'))]"/>
+                <filter name="posted" string="مرحّلة" domain="[('state', '=', 'posted')]"/>
+                <filter name="date" string="التاريخ" date="date"/>
+                <group>
+                    <filter name="g_type" string="النوع" context="{'group_by': 'tx_type'}"/>
+                    <filter name="g_state" string="الحالة" context="{'group_by': 'state'}"/>
+                    <filter name="g_site" string="الموقع" context="{'group_by': 'site_id'}"/>
+                    <filter name="g_day" string="اليوم" context="{'group_by': 'date:day'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+    <record id="action_tx_in" model="ir.actions.act_window">
+        <field name="name">دخول المواد</field>
+        <field name="res_model">alwabrn.transaction</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('tx_type', 'in', ('opening', 'receipt', 'return_in', 'adj_plus'))]</field>
+        <field name="context">{'default_tx_type': 'receipt'}</field>
+    </record>
+    <record id="action_tx_out" model="ir.actions.act_window">
+        <field name="name">خروج المواد</field>
+        <field name="res_model">alwabrn.transaction</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('tx_type', 'in', ('issue_site', 'issue', 'return_out', 'damaged', 'scrap', 'adj_minus', 'transfer', 'consume'))]</field>
+        <field name="context">{'default_tx_type': 'issue_site'}</field>
+    </record>
+    <record id="action_tx_all" model="ir.actions.act_window">
+        <field name="name">كل حركات المواد</field>
+        <field name="res_model">alwabrn.transaction</field>
+        <field name="view_mode">list,form</field>
+    </record>
+    <record id="action_tx_pending" model="ir.actions.act_window">
+        <field name="name">حركات بانتظار الاعتماد</field>
+        <field name="res_model">alwabrn.transaction</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('state', 'in', ('draft', 'pending'))]</field>
+    </record>
+    <record id="action_tx_new_receipt" model="ir.actions.act_window">
+        <field name="name">استلام مواد</field>
+        <field name="res_model">alwabrn.transaction</field>
+        <field name="view_mode">form</field>
+        <field name="context">{'default_tx_type': 'receipt'}</field>
+    </record>
+    <record id="action_tx_new_issue" model="ir.actions.act_window">
+        <field name="name">صرف مواد</field>
+        <field name="res_model">alwabrn.transaction</field>
+        <field name="view_mode">form</field>
+        <field name="context">{'default_tx_type': 'issue_site'}</field>
+    </record>
+    <record id="action_tx_new_opening" model="ir.actions.act_window">
+        <field name="name">إدخال رصيد افتتاحي</field>
+        <field name="res_model">alwabrn.transaction</field>
+        <field name="view_mode">form</field>
+        <field name="context">{'default_tx_type': 'opening'}</field>
+    </record>
+</odoo>

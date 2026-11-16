@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_site_list" model="ir.ui.view">
+        <field name="name">alwabrn.site.list</field>
+        <field name="model">alwabrn.site</field>
+        <field name="arch" type="xml">
+            <list string="مواقع المشاريع">
+                <field name="code"/><field name="name"/><field name="project_id"/><field name="work_order"/>
+                <field name="supervisor_id"/><field name="employee_id" optional="show"/>
+                <field name="custody_line_count"/><field name="custody_confirmed_on" optional="show"/>
+            </list>
+        </field>
+    </record>
+    <record id="view_site_form" model="ir.ui.view">
+        <field name="name">alwabrn.site.form</field>
+        <field name="model">alwabrn.site</field>
+        <field name="arch" type="xml">
+            <form string="موقع مشروع">
+                <header>
+                    <button name="action_view_custody" type="object" string="عرض العهدة" class="btn-primary"/>
+                    <button name="action_confirm_custody" type="object" string="تأكيد العهدة (المشرف)"
+                            groups="alwabrn_warehouse.group_alw_supervisor,alwabrn_warehouse.group_alw_manager"
+                            confirm="أقر بأن العهدة القائمة المعروضة صحيحة."/>
+                </header>
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="code"/><field name="name"/><field name="project_id"/><field name="work_order"/>
+                        </group>
+                        <group>
+                            <field name="supervisor_id"/><field name="employee_id"/><field name="location_id"/>
+                            <field name="custody_confirmed_on"/><field name="custody_confirmed_by"/>
+                            <field name="active" widget="boolean_toggle"/>
+                        </group>
+                    </group>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+    <record id="action_sites" model="ir.actions.act_window">
+        <field name="name">المواقع وأوامر العمل</field>
+        <field name="res_model">alwabrn.site</field>
+        <field name="view_mode">list,form</field>
+    </record>
+    <record id="view_project_list" model="ir.ui.view">
+        <field name="name">alwabrn.project.list</field>
+        <field name="model">alwabrn.project</field>
+        <field name="arch" type="xml">
+            <list string="المشاريع" editable="bottom"><field name="code"/><field name="name"/><field name="active"/></list>
+        </field>
+    </record>
+    <record id="action_projects" model="ir.actions.act_window">
+        <field name="name">المشاريع</field>
+        <field name="res_model">alwabrn.project</field>
+        <field name="view_mode">list</field>
+    </record>
+
+    <record id="view_custody_list" model="ir.ui.view">
+        <field name="name">alwabrn.custody.line.list</field>
+        <field name="model">alwabrn.custody.line</field>
+        <field name="arch" type="xml">
+            <list string="عهد المواقع" decoration-bf="qty_outstanding &gt; 0">
+                <field name="site_id"/><field name="project_id" optional="show"/><field name="work_order" optional="show"/>
+                <field name="supervisor_id" optional="show"/><field name="employee_id" optional="hide"/>
+                <field name="sec_code"/><field name="product_id"/>
+                <field name="qty_issued"/><field name="qty_returned"/><field name="qty_consumed"/>
+                <field name="qty_other_out" optional="show"/><field name="qty_outstanding"/><field name="uom_id"/>
+            </list>
+        </field>
+    </record>
+    <record id="view_custody_search" model="ir.ui.view">
+        <field name="name">alwabrn.custody.line.search</field>
+        <field name="model">alwabrn.custody.line</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="sec_code" filter_domain="['|', ('sec_code', 'ilike', self), ('product_id', 'ilike', self)]"/>
+                <field name="site_id"/><field name="project_id"/><field name="work_order"/><field name="supervisor_id"/>
+                <filter name="outstanding" string="عهدة قائمة" domain="[('qty_outstanding', '&gt;', 0)]"/>
+                <group>
+                    <filter name="g_site" string="الموقع" context="{'group_by': 'site_id'}"/>
+                    <filter name="g_project" string="المشروع" context="{'group_by': 'project_id'}"/>
+                    <filter name="g_supervisor" string="المشرف" context="{'group_by': 'supervisor_id'}"/>
+                    <filter name="g_employee" string="الموظف" context="{'group_by': 'employee_id'}"/>
+                    <filter name="g_product" string="المادة" context="{'group_by': 'product_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+    <record id="view_custody_pivot" model="ir.ui.view">
+        <field name="name">alwabrn.custody.line.pivot</field>
+        <field name="model">alwabrn.custody.line</field>
+        <field name="arch" type="xml">
+            <pivot><field name="site_id" type="row"/><field name="product_id" type="row"/><field name="qty_outstanding" type="measure"/></pivot>
+        </field>
+    </record>
+    <record id="action_custody" model="ir.actions.act_window">
+        <field name="name">عهد المواقع</field>
+        <field name="res_model">alwabrn.custody.line</field>
+        <field name="view_mode">list,pivot</field>
+        <field name="context">{'search_default_outstanding': 1, 'search_default_g_site': 1}</field>
+    </record>
+</odoo>

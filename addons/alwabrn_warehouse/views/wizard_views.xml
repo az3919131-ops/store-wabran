@@ -1,0 +1,174 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_paste_wizard" model="ir.ui.view">
+        <field name="name">alwabrn.paste.wizard.form</field>
+        <field name="model">alwabrn.paste.wizard</field>
+        <field name="arch" type="xml">
+            <form string="لصق البيانات">
+                <group>
+                    <group><field name="channel"/><field name="content_type"/></group>
+                    <group><field name="effective_date"/><field name="site_id"/><field name="document_ref"/></group>
+                </group>
+                <div class="text-muted">الصق من Excel أو واتساب أو البريد أو Word أو PDF. مثال: <code>908111001    100</code> أو «تم صرف 10 قطع من المادة 908111002 إلى موقع 105».</div>
+                <field name="text" placeholder="الصق هنا..." class="alw_paste_area"/>
+                <footer>
+                    <button name="action_process" type="object" string="استخراج ومعاينة" class="btn-primary"/>
+                    <button special="cancel" string="إلغاء"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+    <record id="action_paste_wizard" model="ir.actions.act_window">
+        <field name="name">لصق البيانات</field>
+        <field name="res_model">alwabrn.paste.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+    <record id="action_paste_wizard_wa" model="ir.actions.act_window">
+        <field name="name">لصق رسالة واتساب</field>
+        <field name="res_model">alwabrn.paste.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <field name="context">{'default_channel': 'whatsapp'}</field>
+    </record>
+
+    <record id="view_upload_wizard" model="ir.ui.view">
+        <field name="name">alwabrn.upload.wizard.form</field>
+        <field name="model">alwabrn.upload.wizard</field>
+        <field name="arch" type="xml">
+            <form string="رفع ملف / صورة">
+                <group>
+                    <group>
+                        <field name="channel"/><field name="content_type"/>
+                        <field name="register_type" invisible="channel == 'excel'"/>
+                    </group>
+                    <group><field name="effective_date"/><field name="site_id"/><field name="document_ref"/></group>
+                </group>
+                <group>
+                    <field name="file" filename="filename"/><field name="filename" invisible="1"/>
+                    <field name="file2" filename="filename2"/><field name="filename2" invisible="1"/>
+                    <field name="file3" filename="filename3"/><field name="filename3" invisible="1"/>
+                </group>
+                <group string="أعمدة Excel" invisible="channel not in ('excel', 'whatsapp', 'email')">
+                    <field name="detected" colspan="2"/>
+                    <field name="manual_mapping"/>
+                    <group invisible="not manual_mapping" colspan="2">
+                        <field name="header_row"/><field name="col_sec"/><field name="col_qty"/>
+                        <field name="col_unit"/><field name="col_date"/><field name="col_site"/>
+                    </group>
+                </group>
+                <footer>
+                    <button name="action_process" type="object" string="معالجة ومعاينة" class="btn-primary"/>
+                    <button special="cancel" string="إلغاء"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+    <record id="action_upload_excel" model="ir.actions.act_window">
+        <field name="name">رفع Excel</field>
+        <field name="res_model">alwabrn.upload.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <field name="context">{'default_channel': 'excel'}</field>
+    </record>
+    <record id="action_upload_image" model="ir.actions.act_window">
+        <field name="name">رفع صورة / PDF</field>
+        <field name="res_model">alwabrn.upload.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <field name="context">{'default_channel': 'image'}</field>
+    </record>
+    <record id="action_upload_wa" model="ir.actions.act_window">
+        <field name="name">رفع مرفق واتساب</field>
+        <field name="res_model">alwabrn.upload.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <field name="context">{'default_channel': 'whatsapp'}</field>
+    </record>
+
+    <record id="view_catalog_wizard" model="ir.ui.view">
+        <field name="name">alwabrn.catalog.wizard.form</field>
+        <field name="model">alwabrn.catalog.wizard</field>
+        <field name="arch" type="xml">
+            <form string="استيراد كتالوج المواد">
+                <field name="state" invisible="1"/>
+                <group invisible="state != 'upload'">
+                    <field name="file" filename="filename"/><field name="filename" invisible="1"/>
+                </group>
+                <field name="summary" invisible="state == 'upload'"/>
+                <field name="line_ids" invisible="state == 'upload'" readonly="1">
+                    <list decoration-danger="severity == 'error'" decoration-warning="severity == 'warning'" limit="40">
+                        <field name="row"/><field name="sec_code"/><field name="description"/><field name="unit"/>
+                        <field name="price"/><field name="category"/><field name="severity"/><field name="issues"/>
+                        <field name="exists"/><field name="action"/>
+                    </list>
+                </field>
+                <footer>
+                    <button name="action_preview" type="object" string="معاينة وتقرير الأخطاء" class="btn-primary" invisible="state != 'upload'"/>
+                    <button name="action_import" type="object" string="استيراد السجلات الجديدة" class="btn-success" invisible="state != 'preview'"/>
+                    <button special="cancel" string="إغلاق"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+    <record id="action_catalog_wizard" model="ir.actions.act_window">
+        <field name="name">استيراد / فحص كتالوج المواد</field>
+        <field name="res_model">alwabrn.catalog.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+    <record id="view_report_wizard" model="ir.ui.view">
+        <field name="name">alwabrn.report.wizard.form</field>
+        <field name="model">alwabrn.report.wizard</field>
+        <field name="arch" type="xml">
+            <form string="تصدير وإرسال التقرير">
+                <group>
+                    <group string="1. التقرير والفترة">
+                        <field name="report_code"/><field name="date_from"/><field name="date_to"/><field name="file_format" widget="radio"/>
+                    </group>
+                    <group string="2. الفلاتر">
+                        <field name="location_id" options="{'no_create': True}"/><field name="site_id"/><field name="project_id"/>
+                        <field name="work_order"/><field name="categ_id"/><field name="product_id" options="{'no_create': True}"/>
+                    </group>
+                </group>
+                <group string="3. الإرسال بالبريد (اختياري — للمدير)">
+                    <field name="recipient_ids" widget="many2many_tags" options="{'no_create': True}"/>
+                    <field name="message"/>
+                </group>
+                <field name="row_count" invisible="1"/>
+                <field name="preview_html" invisible="not preview_html" class="alw_preview"/>
+                <footer>
+                    <button name="action_preview" type="object" string="معاينة" class="btn-secondary"/>
+                    <button name="action_export" type="object" string="تصدير وتنزيل" class="btn-primary"/>
+                    <button name="action_send" type="object" string="تصدير وإرسال التقرير" class="btn-success"
+                            groups="alwabrn_warehouse.group_alw_manager" confirm="سيتم إرسال التقرير إلى المستلمين المحددين. متابعة؟"/>
+                    <button special="cancel" string="إغلاق"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+    <record id="action_report_wizard" model="ir.actions.act_window">
+        <field name="name">التقارير — تصدير وإرسال</field>
+        <field name="res_model">alwabrn.report.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+    <record id="view_secret_wizard" model="ir.ui.view">
+        <field name="name">alwabrn.secret.wizard.form</field>
+        <field name="model">alwabrn.secret.wizard</field>
+        <field name="arch" type="xml">
+            <form string="بيانات الاعتماد">
+                <div class="text-muted">تحفظ القيم مشفرة ولا تعرض بعد الحفظ. اترك الحقل فارغاً لإبقاء القيمة الحالية.</div>
+                <field name="account_id" invisible="1"/><field name="kind" invisible="1"/>
+                <group invisible="kind != 'whatsapp'">
+                    <field name="access_token" password="True"/><field name="app_secret" password="True"/>
+                    <field name="verify_token" password="True"/>
+                </group>
+                <group invisible="kind != 'ai'"><field name="api_key" password="True"/></group>
+                <footer><button name="action_save" type="object" string="حفظ" class="btn-primary"/><button special="cancel" string="إلغاء"/></footer>
+            </form>
+        </field>
+    </record>
+</odoo>

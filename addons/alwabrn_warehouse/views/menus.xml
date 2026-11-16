@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_dashboard" model="ir.actions.client">
+        <field name="name">الرئيسية</field>
+        <field name="tag">alwabrn_dashboard</field>
+    </record>
+    <record id="action_analytics" model="ir.actions.client">
+        <field name="name">لوحة تحليل المخزون والتقارير</field>
+        <field name="tag">alwabrn_analytics</field>
+    </record>
+    <record id="action_camera" model="ir.actions.client">
+        <field name="name">تصوير دفتر المواد</field>
+        <field name="tag">alwabrn_camera</field>
+    </record>
+    <record id="action_assistant" model="ir.actions.client">
+        <field name="name">مساعد الوبران الذكي</field>
+        <field name="tag">alwabrn_assistant</field>
+    </record>
+    <record id="action_users" model="ir.actions.act_window">
+        <field name="name">المستخدمون والصلاحيات</field>
+        <field name="res_model">res.users</field>
+        <field name="view_mode">list,form</field>
+    </record>
+    <record id="action_locations" model="ir.actions.act_window">
+        <field name="name">المواقع المخزنية</field>
+        <field name="res_model">stock.location</field>
+        <field name="view_mode">list,form</field>
+    </record>
+    <record id="action_uoms" model="ir.actions.act_window">
+        <field name="name">وحدات القياس والتحويلات</field>
+        <field name="res_model">uom.uom</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <menuitem id="menu_root" name="الوبران للمستودعات" sequence="1" web_icon="alwabrn_warehouse,static/description/icon.png"
+              groups="group_alw_auditor,group_alw_supervisor,group_alw_employee"/>
+    <menuitem id="menu_home" name="الرئيسية" parent="menu_root" sequence="1" action="action_dashboard"/>
+    <menuitem id="menu_materials" name="المواد والأصناف" parent="menu_root" sequence="2" action="action_materials"
+              groups="group_alw_auditor,group_alw_employee"/>
+    <menuitem id="menu_balance" name="الرصيد الحالي" parent="menu_root" sequence="3" groups="group_alw_auditor,group_alw_employee"/>
+    <menuitem id="menu_balance_now" name="الأرصدة الحالية" parent="menu_balance" sequence="1" action="action_balance"/>
+    <menuitem id="menu_stock_card" name="كرت الصنف (سجل الحركات)" parent="menu_balance" sequence="2" action="action_stock_card"/>
+    <menuitem id="menu_in" name="دخول المواد" parent="menu_root" sequence="4" action="action_tx_in" groups="group_alw_auditor,group_alw_employee"/>
+    <menuitem id="menu_out" name="خروج المواد" parent="menu_root" sequence="5" action="action_tx_out" groups="group_alw_auditor,group_alw_employee"/>
+    <menuitem id="menu_custody" name="عهد المواقع" parent="menu_root" sequence="6"/>
+    <menuitem id="menu_custody_lines" name="العهد القائمة" parent="menu_custody" sequence="1" action="action_custody"/>
+    <menuitem id="menu_sites" name="المواقع وأوامر العمل" parent="menu_custody" sequence="2" action="action_sites"/>
+    <menuitem id="menu_projects" name="المشاريع" parent="menu_custody" sequence="3" action="action_projects" groups="group_alw_employee,group_alw_auditor"/>
+    <menuitem id="menu_snapshot" name="إدخال الرصيد اليومي" parent="menu_root" sequence="7" action="action_snapshots" groups="group_alw_auditor,group_alw_employee"/>
+    <menuitem id="menu_camera" name="تصوير الدفاتر" parent="menu_root" sequence="8" groups="group_alw_employee"/>
+    <menuitem id="menu_camera_capture" name="تصوير دفتر الآن" parent="menu_camera" sequence="1" action="action_camera"/>
+    <menuitem id="menu_camera_upload" name="رفع صورة / PDF" parent="menu_camera" sequence="2" action="action_upload_image"/>
+    <menuitem id="menu_camera_batches" name="دفعات الصور للمراجعة" parent="menu_camera" sequence="3" action="action_batches_ocr"/>
+    <menuitem id="menu_camera_docs" name="أرشيف المستندات" parent="menu_camera" sequence="4" action="action_documents"/>
+    <menuitem id="menu_smart" name="الإدخال الذكي" parent="menu_root" sequence="9" groups="group_alw_auditor,group_alw_employee"/>
+    <menuitem id="menu_smart_batches" name="دفعات المراجعة والاعتماد" parent="menu_smart" sequence="1" action="action_batches"/>
+    <menuitem id="menu_smart_paste" name="لصق البيانات" parent="menu_smart" sequence="2" action="action_paste_wizard" groups="group_alw_employee"/>
+    <menuitem id="menu_smart_excel" name="رفع Excel" parent="menu_smart" sequence="3" action="action_upload_excel" groups="group_alw_employee"/>
+    <menuitem id="menu_smart_pending" name="حركات بانتظار الاعتماد" parent="menu_smart" sequence="4" action="action_tx_pending"/>
+    <menuitem id="menu_recon" name="الجرد والمطابقة" parent="menu_root" sequence="10" groups="group_alw_auditor,group_alw_employee"/>
+    <menuitem id="menu_recon_list" name="المطابقة والحصر الدفتري" parent="menu_recon" sequence="1" action="action_recon"/>
+    <menuitem id="menu_recon_lines" name="فروقات الجرد" parent="menu_recon" sequence="2" action="action_recon_lines"/>
+    <menuitem id="menu_reports" name="التقارير والتحليل" parent="menu_root" sequence="11" groups="group_alw_auditor,group_alw_employee"/>
+    <menuitem id="menu_analytics" name="لوحة تحليل المخزون" parent="menu_reports" sequence="1" action="action_analytics"/>
+    <menuitem id="menu_report_wizard" name="تصدير وإرسال تقرير" parent="menu_reports" sequence="2" action="action_report_wizard"/>
+    <menuitem id="menu_assistant" name="مساعد الوبران الذكي" parent="menu_reports" sequence="3" action="action_assistant"/>
+    <menuitem id="menu_report_history" name="سجل التقارير" parent="menu_reports" sequence="4" action="action_report_history"/>
+    <menuitem id="menu_schedules" name="التقارير المجدولة" parent="menu_reports" sequence="5" action="action_schedules" groups="group_alw_manager"/>
+    <menuitem id="menu_audit" name="سجل التدقيق" parent="menu_reports" sequence="6" action="action_approvals"/>
+    <menuitem id="menu_comm" name="البريد وواتساب" parent="menu_root" sequence="12" groups="group_alw_employee,group_alw_auditor"/>
+    <menuitem id="menu_comm_inbox" name="الرسائل الواردة (دفعات)" parent="menu_comm" sequence="1" action="action_batches_external"/>
+    <menuitem id="menu_comm_paste" name="لصق رسالة واتساب" parent="menu_comm" sequence="2" action="action_paste_wizard_wa" groups="group_alw_employee"/>
+    <menuitem id="menu_comm_upload" name="رفع مرفق واتساب / بريد" parent="menu_comm" sequence="3" action="action_upload_wa" groups="group_alw_employee"/>
+    <menuitem id="menu_comm_log" name="سجل الرسائل" parent="menu_comm" sequence="4" action="action_integration_messages"/>
+    <menuitem id="menu_comm_settings" name="إعدادات الربط وحالته" parent="menu_comm" sequence="5" action="action_integrations" groups="group_alw_manager"/>
+    <menuitem id="menu_users" name="المستخدمون والصلاحيات" parent="menu_root" sequence="13" action="action_users" groups="group_alw_admin"/>
+    <menuitem id="menu_settings" name="الإعدادات" parent="menu_root" sequence="14" groups="group_alw_manager"/>
+    <menuitem id="menu_settings_integrations" name="التكاملات" parent="menu_settings" sequence="1" action="action_integrations"/>
+    <menuitem id="menu_settings_catalog" name="استيراد / فحص كتالوج المواد" parent="menu_settings" sequence="2" action="action_catalog_wizard"/>
+    <menuitem id="menu_settings_opening" name="إدخال رصيد افتتاحي" parent="menu_settings" sequence="3" action="action_tx_new_opening"/>
+    <menuitem id="menu_settings_locations" name="المواقع المخزنية" parent="menu_settings" sequence="4" action="action_locations" groups="group_alw_admin"/>
+    <menuitem id="menu_settings_uom" name="وحدات القياس" parent="menu_settings" sequence="5" action="action_uoms" groups="group_alw_admin"/>
+</odoo>

@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="report_generic_document">
+        <t t-call="web.html_container">
+            <div class="article" dir="rtl" style="font-family: 'Noto Naskh Arabic', 'Noto Sans Arabic', 'DejaVu Sans', sans-serif; direction: rtl; text-align: right;">
+                <div style="background:#0B5345;color:#fff;padding:10px 14px;">
+                    <div style="font-size:18px;font-weight:bold;" t-out="company"/>
+                    <div style="font-size:13px;" t-out="branch"/>
+                </div>
+                <h3 style="margin:12px 0 4px 0;" t-out="report['title']"/>
+                <div style="font-size:12px;color:#444;">
+                    الفترة: <span t-out="report['period']"/> &#160;|&#160; تاريخ التصدير: <span t-out="exported"/>
+                    &#160;|&#160; الفلاتر: <span t-out="report['filters']"/>
+                </div>
+                <table style="margin:10px 0;border-collapse:collapse;font-size:12px;">
+                    <tr t-foreach="report['summary']" t-as="s">
+                        <td style="border:1px solid #999;padding:3px 8px;background:#f2f2f2;font-weight:bold;" t-out="s[0]"/>
+                        <td style="border:1px solid #999;padding:3px 8px;" t-out="s[1]"/>
+                    </tr>
+                </table>
+                <table style="width:100%;border-collapse:collapse;font-size:10px;">
+                    <thead>
+                        <tr><th t-foreach="report['headers']" t-as="h" style="border:1px solid #666;background:#1F4E78;color:#fff;padding:4px;" t-out="h"/></tr>
+                    </thead>
+                    <tbody>
+                        <tr t-foreach="report['rows']" t-as="row">
+                            <td t-foreach="row" t-as="c" style="border:1px solid #999;padding:3px;" t-out="c"/>
+                        </tr>
+                    </tbody>
+                </table>
+                <table style="width:100%;margin-top:30px;font-size:12px;">
+                    <tr>
+                        <td style="width:33%;">أمين المستودع: ....................</td>
+                        <td style="width:33%;">مدير المستودع: ....................</td>
+                        <td style="width:33%;">الاعتماد: ....................</td>
+                    </tr>
+                </table>
+                <div style="margin-top:18px;font-size:11px;color:#555;text-align:center;" t-out="footer"/>
+            </div>
+        </t>
+    </template>
+    <record id="paperformat_alw" model="report.paperformat">
+        <field name="name">Al Wabran A4 Landscape</field>
+        <field name="format">A4</field>
+        <field name="orientation">Landscape</field>
+        <field name="margin_top">10</field><field name="margin_bottom">10</field>
+        <field name="margin_left">8</field><field name="margin_right">8</field>
+        <field name="header_spacing">0</field><field name="dpi">90</field>
+    </record>
+    <record id="action_report_generic" model="ir.actions.report">
+        <field name="name">تقرير الوبران</field>
+        <field name="model">alwabrn.report.history</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">alwabrn_warehouse.report_generic_document</field>
+        <field name="paperformat_id" ref="paperformat_alw"/>
+    </record>
+</odoo>

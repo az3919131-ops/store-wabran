@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="alwabrn_warehouse.Kpis">
+        <div class="alw_kpis">
+            <t t-foreach="kpis" t-as="k" t-key="k.key">
+                <div t-attf-class="alw_kpi alw_tone_#{k.tone}" t-on-click="() => this.openKpi(k)">
+                    <div class="alw_kpi_value" t-out="k.display"/>
+                    <div class="alw_kpi_label" t-out="k.label"/>
+                </div>
+            </t>
+        </div>
+    </t>
+
+    <t t-name="alwabrn_warehouse.Dashboard">
+        <div class="alw_page o_action" dir="rtl">
+            <div class="alw_header">
+                <div>
+                    <h1>نظام الوبران الذكي لإدارة المواد والمستودعات</h1>
+                    <div class="alw_sub">شركة الوبران — العقد الموحد للشركة السعودية للكهرباء — فرع نجران</div>
+                </div>
+                <button class="btn btn-light" t-on-click="() => this.load()"><i class="fa fa-refresh"/> تحديث</button>
+            </div>
+            <h3 class="alw_section">إجراءات سريعة</h3>
+            <div class="alw_quick">
+                <t t-foreach="quickActions" t-as="q" t-key="q.label">
+                    <button class="alw_quick_btn" t-on-click="() => this.open(q.action)">
+                        <i t-attf-class="fa #{q.icon}"/><span t-out="q.label"/>
+                    </button>
+                </t>
+            </div>
+            <h3 class="alw_section">المؤشرات الحية (من سجلات Odoo مباشرة)</h3>
+            <t t-call="alwabrn_warehouse.Kpis"><t t-set="kpis" t-value="state.data.kpis"/></t>
+            <div class="alw_footer" t-out="footer"/>
+        </div>
+    </t>
+
+    <t t-name="alwabrn_warehouse.Analytics">
+        <div class="alw_page o_action" dir="rtl" t-ref="root">
+            <div class="alw_header">
+                <div><h1>لوحة تحليل المخزون والتقارير</h1>
+                    <div class="alw_sub">الأرقام عدد حركات/مواد أو قيم مالية مرجعية — لا تُجمع كميات بوحدات مختلفة.</div></div>
+                <button class="btn btn-light" t-on-click="() => this.open('alwabrn_warehouse.action_report_wizard')">
+                    <i class="fa fa-file-excel-o"/> تصدير وإرسال تقرير</button>
+            </div>
+            <div class="alw_filters">
+                <label>من <input type="date" class="form-control" t-model="state.f.date_from"/></label>
+                <label>إلى <input type="date" class="form-control" t-model="state.f.date_to"/></label>
+                <label>الموقع
+                    <select class="form-select" t-model="state.f.site_id"><option value="">الكل</option>
+                        <t t-foreach="state.options.sites" t-as="s" t-key="s.id"><option t-att-value="s.id" t-out="s.display_name"/></t></select></label>
+                <label>المشروع
+                    <select class="form-select" t-model="state.f.project_id"><option value="">الكل</option>
+                        <t t-foreach="state.options.projects" t-as="p" t-key="p.id"><option t-att-value="p.id" t-out="p.name"/></t></select></label>
+                <label>أمر العمل <input type="text" class="form-control" t-model="state.f.work_order"/></label>
+                <label>فئة المواد
+                    <select class="form-select" t-model="state.f.categ_id"><option value="">الكل</option>
+                        <t t-foreach="state.options.categories" t-as="c" t-key="c.id"><option t-att-value="c.id" t-out="c.name"/></t></select></label>
+                <label>كود SEC <input type="text" class="form-control" t-model="state.f.sec_code" inputmode="numeric"/></label>
+                <label>نوع الحركة
+                    <select class="form-select" t-model="state.f.tx_type"><option value="">الكل</option>
+                        <t t-foreach="state.options.tx_types" t-as="t" t-key="t[0]"><option t-att-value="t[0]" t-out="t[1]"/></t></select></label>
+                <button class="btn btn-primary" t-on-click="() => this.apply()"><i class="fa fa-filter"/> تطبيق</button>
+            </div>
+            <t t-call="alwabrn_warehouse.Kpis"><t t-set="kpis" t-value="state.data.kpis"/></t>
+            <div class="alw_charts">
+                <t t-foreach="charts" t-as="c" t-key="c.key">
+                    <div class="alw_chart"><h4 t-out="c.title"/><div class="alw_canvas"><canvas t-att-data-chart="c.key"/></div></div>
+                </t>
+            </div>
+            <div class="alw_footer" t-out="footer"/>
+        </div>
+    </t>
+
+    <t t-name="alwabrn_warehouse.Camera">
+        <div class="alw_page o_action" dir="rtl">
+            <div class="alw_header"><div><h1>تصوير دفتر المواد</h1>
+                <div class="alw_sub">التقط صورة الدفتر، يستخرج النظام البيانات للمراجعة. لا يُرحّل شيء دون مراجعتك واعتماد المدير.</div></div></div>
+            <h3 class="alw_section">1. نوع الدفتر</h3>
+            <div class="alw_quick">
+                <t t-foreach="registers" t-as="r" t-key="r.code">
+                    <button t-attf-class="alw_quick_btn #{state.register === r.code ? 'alw_selected' : ''}"
+                            t-on-click="() => state.register = r.code"><span t-out="r.label"/></button>
+                </t>
+            </div>
+            <h3 class="alw_section">2. التقط أو اختر</h3>
+            <div class="alw_quick">
+                <button class="alw_quick_btn alw_big" t-on-click="() => this.pick('cameraInput')"><i class="fa fa-camera"/><span>فتح الكاميرا</span></button>
+                <button class="alw_quick_btn alw_big" t-on-click="() => this.pick('fileInput')"><i class="fa fa-picture-o"/><span>اختيار صور / PDF</span></button>
+            </div>
+            <input type="file" accept="image/*" capture="environment" class="d-none" t-ref="camera" t-on-change="onFiles"/>
+            <input type="file" accept="image/*,application/pdf" multiple="multiple" class="d-none" t-ref="file" t-on-change="onFiles"/>
+            <div class="alw_thumbs">
+                <t t-foreach="state.files" t-as="f" t-key="f_index">
+                    <div class="alw_thumb">
+                        <img t-if="f.preview" t-att-src="f.preview"/>
+                        <div t-else="" class="alw_thumb_file"><i class="fa fa-file-pdf-o"/></div>
+                        <div class="alw_thumb_name" t-out="f.name"/>
+                        <button class="btn btn-sm btn-outline-danger" t-on-click="() => this.remove(f_index)">حذف</button>
+                    </div>
+                </t>
+            </div>
+            <h3 class="alw_section">3. استخراج البيانات</h3>
+            <button class="btn btn-success btn-lg" t-att-disabled="state.busy" t-on-click="() => this.process()">
+                <i t-attf-class="fa #{state.busy ? 'fa-spinner fa-spin' : 'fa-magic'}"/> استخراج ومراجعة
+            </button>
+            <div class="alw_footer" t-out="footer"/>
+        </div>
+    </t>
+
+    <t t-name="alwabrn_warehouse.Assistant">
+        <div class="alw_page o_action" dir="rtl">
+            <div class="alw_header"><div><h1>مساعد الوبران الذكي</h1>
+                <div class="alw_sub">يجيب من بيانات Odoo الفعلية وبحسب صلاحياتك. للقراءة فقط — لا يعتمد ولا يعدل المخزون.</div></div></div>
+            <div class="alw_examples">
+                <t t-foreach="examples" t-as="e" t-key="e"><button class="btn btn-outline-secondary btn-sm" t-on-click="() => this.ask(e)" t-out="e"/></t>
+            </div>
+            <div class="alw_chat">
+                <t t-foreach="state.messages" t-as="m" t-key="m_index">
+                    <div t-attf-class="alw_msg alw_msg_#{m.role}">
+                        <div t-out="m.text"/>
+                        <div t-if="m.rows and m.rows.length" class="table-responsive">
+                            <table class="table table-sm table-bordered mt-2">
+                                <thead><tr><t t-foreach="m.columns" t-as="c" t-key="c_index"><th t-out="c"/></t></tr></thead>
+                                <tbody><t t-foreach="m.rows" t-as="row" t-key="row_index">
+                                    <tr><t t-foreach="row" t-as="cell" t-key="cell_index"><td t-out="cell"/></t></tr></t></tbody>
+                            </table>
+                        </div>
+                        <div t-if="m.source" class="alw_source">المصدر: <t t-out="m.source"/></div>
+                    </div>
+                </t>
+            </div>
+            <div class="alw_ask">
+                <input type="text" class="form-control form-control-lg" placeholder="اكتب سؤالك بالعربية..." t-model="state.question" t-on-keydown="onKey"/>
+                <button class="btn btn-primary btn-lg" t-att-disabled="state.busy" t-on-click="() => this.ask()">إرسال</button>
+            </div>
+            <div class="alw_footer" t-out="footer"/>
+        </div>
+    </t>
+</templates>
