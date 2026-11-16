@@ -4,3 +4,4 @@ __pycache__/
 *.dump
 odoo-data/
 addons/alwabrn_warehouse/data/materials_2021.xlsx
+.netlify/
