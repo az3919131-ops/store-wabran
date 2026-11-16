@@ -13,10 +13,11 @@ services:
     depends_on: [db]
     ports: ["8069:8069"]
     environment:
-      HOST: db
-      USER: odoo
-      PASSWORD: ${DB_PASSWORD}
+      DB_HOST: db
+      DB_USER: odoo
+      DB_PASSWORD: ${DB_PASSWORD}
       DB_NAME: alwabrn
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?set ADMIN_PASSWORD in .env}
       ALWABRN_SECRET_KEY: ${ALWABRN_SECRET_KEY:?set ALWABRN_SECRET_KEY in .env}
     volumes: [alw_data:/var/lib/odoo]
     restart: unless-stopped
