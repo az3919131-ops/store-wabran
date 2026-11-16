@@ -19,7 +19,7 @@
             <form string="حساب تكامل" create="0" delete="0">
                 <header>
                     <button name="action_open_secret_wizard" type="object" string="إدخال / تحديث بيانات الاعتماد" class="btn-primary"
-                            invisible="kind not in ('whatsapp', 'ai')" groups="alwabrn_warehouse.group_alw_admin"/>
+                            invisible="kind not in ('whatsapp', 'ai', 'minutes')" groups="alwabrn_warehouse.group_alw_admin"/>
                     <button name="action_test_connection" type="object" string="اختبار الاتصال" groups="alwabrn_warehouse.group_alw_admin"/>
                     <field name="state" widget="statusbar"/>
                 </header>
@@ -52,6 +52,10 @@
                         </div>
                     </group>
                     <group string="AI" invisible="kind != 'ai'"><field name="has_api_key"/></group>
+                    <group string="منصة محاضر الاستلام" invisible="kind != 'minutes'">
+                        <field name="minutes_url"/><field name="has_api_key"/>
+                        <div colspan="2" class="text-muted">يسحب النظام كل ساعة أوامر العمل ومواد المحاضر (قراءة فقط) — مفتاح التكامل هو نفسه INTEGRATION_KEY في إعدادات موقع التزام على Netlify.</div>
+                    </group>
                     <notebook>
                         <page string="سجل الأحداث">
                             <field name="log_ids" readonly="1"><list><field name="create_date"/><field name="level"/><field name="message"/></list></field>

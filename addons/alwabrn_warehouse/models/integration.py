@@ -137,6 +137,15 @@ class AlwabrnIntegrationAccount(models.Model):
                 code, st = self.env["alwabrn.ocr.extraction"].provider_status()
                 state = st
                 note = "المزود: %s" % code
+            elif rec.kind == "minutes":
+                import os
+                url = rec.minutes_url or os.environ.get("ALWABRN_MINUTES_URL")
+                key = s.get("api_key") or os.environ.get("ALWABRN_MINUTES_KEY")
+                if url and key:
+                    state = "connected" if rec.last_sync and (not rec.last_error_on or rec.last_error_on < rec.last_sync) else "auth_required"
+                    note = "الربط مهيأ — أوامر العمل والمواد تُسحب آلياً كل ساعة (قراءة فقط)." if state == "connected" else "مهيأ — بانتظار أول مزامنة ناجحة."
+                else:
+                    note = "أدخل رابط منصة المحاضر ومفتاح التكامل."
             elif rec.kind == "ai":
                 if s.get("api_key"):
                     state = "connected" if rec.last_sync else "auth_required"
@@ -296,6 +305,9 @@ class AlwabrnIntegrationAccount(models.Model):
             if st != "connected":
                 raise UserError("مزود OCR «%s» غير جاهز (%s)." % (code, st))
             self.log_event("ocr", "info", "مزود OCR جاهز: %s" % code, ok=True)
+        elif self.kind == "minutes":
+            stats = self.env["alwabrn.work.order"].sync_minutes(raise_errors=True)
+            self.log_event("minutes", "info", "اختبار الربط ناجح: %s محضر" % stats.get("remote"), ok=True)
         elif self.kind == "ai":
             key = self._secrets().get("api_key")
             if not key:

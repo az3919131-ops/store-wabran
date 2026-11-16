@@ -52,8 +52,10 @@
                             <field name="site_id" readonly="state != 'draft'"
                                    invisible="tx_type in ('opening', 'receipt', 'issue', 'return_out', 'adj_plus', 'adj_minus', 'transfer')"
                                    required="tx_type in ('issue_site', 'return_in', 'consume')"/>
+                            <field name="work_order_id" readonly="state != 'draft'" options="{'no_create': True}"
+                                   required="tx_type == 'return_legacy'"/>
                             <field name="project_id" readonly="state != 'draft'"/>
-                            <field name="work_order" readonly="state != 'draft'"/>
+                            <field name="work_order" readonly="state != 'draft'" invisible="work_order_id"/>
                         </group>
                         <group>
                             <field name="document_ref" readonly="state in ('posted', 'reversed')"/>

@@ -178,6 +178,19 @@ def load_seed_files(env, folder, key):
     cat_path = os.path.join(folder, "materials_2021.xlsx.enc")
     if os.path.exists(cat_path):
         res["catalog"] = import_catalog(env, f.decrypt(open(cat_path, "rb").read()))
+    wo_path = os.path.join(folder, "work_orders.json.enc")
+    if os.path.exists(wo_path):
+        data = json.loads(f.decrypt(open(wo_path, "rb").read()).decode("utf-8"))
+        param = env["ir.config_parameter"].sudo()
+        if param.get_param("alwabrn.seed.work_orders") != data.get("version"):
+            import datetime as _dt
+            items = [dict(it, **{k: _dt.date.fromisoformat(it[k]) if it.get(k) else None
+                                 for k in ("delivery_date", "receipt_date", "completion_date", "extract_date")})
+                     for it in data["items"]]
+            res["work_orders"] = env["alwabrn.work.order"].import_items(items)
+            param.set_param("alwabrn.seed.work_orders", data.get("version"))
+        else:
+            res["work_orders"] = {"skipped": True}
     stock_path = os.path.join(folder, "opening_stock.json.enc")
     if os.path.exists(stock_path):
         data = json.loads(f.decrypt(open(stock_path, "rb").read()).decode("utf-8"))

@@ -8,6 +8,7 @@ from . import import_batch
 from . import snapshot
 from . import reconciliation
 from . import integration
+from . import work_order
 from . import sql_views
 from . import report_engine
 from . import report

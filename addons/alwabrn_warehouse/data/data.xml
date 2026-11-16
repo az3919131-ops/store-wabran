@@ -84,6 +84,10 @@
         <field name="name">قراءة الصور OCR</field>
         <field name="kind">ocr</field>
     </record>
+    <record id="integration_minutes" model="alwabrn.integration.account">
+        <field name="name">منصة محاضر الاستلام</field>
+        <field name="kind">minutes</field>
+    </record>
     <record id="integration_ai" model="alwabrn.integration.account">
         <field name="name">المساعد الذكي / AI Vision</field>
         <field name="kind">ai</field>

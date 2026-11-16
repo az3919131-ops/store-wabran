@@ -280,3 +280,30 @@ class AlwabrnSecretWizard(models.TransientModel):
             self.account_id.wa_webhook_verified = False
         self.write({"access_token": False, "app_secret": False, "verify_token": False, "api_key": False})
         return {"type": "ir.actions.act_window_close"}
+
+
+class AlwabrnWOImportWizard(models.TransientModel):
+    _name = "alwabrn.wo.import.wizard"
+    _description = "استيراد أوامر العمل من Excel"
+
+    file = fields.Binary("ملف أوامر عمل المشاريع (xls / xlsx)", required=True)
+    filename = fields.Char()
+    summary = fields.Text("النتيجة", readonly=True)
+    state = fields.Selection([("upload", "رفع"), ("done", "تم")], default="upload")
+
+    def action_import(self):
+        self.ensure_one()
+        from ..tools import wo_excel
+        name = (self.filename or "").lower()
+        if not name.endswith((".xls", ".xlsx")):
+            raise UserError("الملف يجب أن يكون Excel (xls أو xlsx).")
+        items, problems = wo_excel.parse(wo_excel.read_sheets(base64.b64decode(self.file), name))
+        if not items:
+            raise UserError("لم يُعثر على أوامر عمل في الملف.\n" + "\n".join(problems[:10]))
+        stats = self.env["alwabrn.work.order"].import_items(items)
+        self.env["alwabrn.approval"].log(self.env.user, "import", "استيراد ملف أوامر العمل %s" % self.filename, stats)
+        self.write({"state": "done", "summary": (
+            "صفوف الملف: %s\nأوامر عمل جديدة: %s · محدّثة: %s\nبنود جديدة: %s · محدّثة: %s\n%s" % (
+                len(items), stats["work_orders_new"], stats["work_orders_updated"], stats["rows_new"],
+                stats["rows_updated"], ("ملاحظات:\n- " + "\n- ".join(problems)) if problems else ""))})
+        return {"type": "ir.actions.act_window", "res_model": self._name, "res_id": self.id, "view_mode": "form", "target": "new"}

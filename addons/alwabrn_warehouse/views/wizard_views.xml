@@ -166,7 +166,7 @@
                     <field name="access_token" password="True"/><field name="app_secret" password="True"/>
                     <field name="verify_token" password="True"/>
                 </group>
-                <group invisible="kind != 'ai'"><field name="api_key" password="True"/></group>
+                <group invisible="kind not in ('ai', 'minutes')"><field name="api_key" password="True"/></group>
                 <footer><button name="action_save" type="object" string="حفظ" class="btn-primary"/><button special="cancel" string="إلغاء"/></footer>
             </form>
         </field>

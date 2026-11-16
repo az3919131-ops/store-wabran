@@ -46,6 +46,11 @@
     <menuitem id="menu_custody_lines" name="العهد القائمة" parent="menu_custody" sequence="1" action="action_custody"/>
     <menuitem id="menu_sites" name="المواقع وأوامر العمل" parent="menu_custody" sequence="2" action="action_sites"/>
     <menuitem id="menu_projects" name="المشاريع" parent="menu_custody" sequence="3" action="action_projects" groups="group_alw_employee,group_alw_auditor"/>
+    <menuitem id="menu_wo" name="أوامر العمل" parent="menu_root" sequence="6" groups="group_alw_auditor,group_alw_employee,group_alw_supervisor"/>
+    <menuitem id="menu_wo_list" name="أوامر العمل" parent="menu_wo" sequence="1" action="action_work_orders"/>
+    <menuitem id="menu_wo_sync" name="تحديث من منصة المحاضر" parent="menu_wo" sequence="2" action="action_wo_sync_server" groups="group_alw_employee"/>
+    <menuitem id="menu_wo_minutes" name="محاضر الاستلام" parent="menu_wo" sequence="3" action="action_minutes_records"/>
+    <menuitem id="menu_wo_import" name="استيراد ملف أوامر العمل" parent="menu_wo" sequence="4" action="action_wo_import_wizard" groups="group_alw_manager"/>
     <menuitem id="menu_snapshot" name="إدخال الرصيد اليومي" parent="menu_root" sequence="7" action="action_snapshots" groups="group_alw_auditor,group_alw_employee"/>
     <menuitem id="menu_camera" name="تصوير الدفاتر" parent="menu_root" sequence="8" groups="group_alw_employee"/>
     <menuitem id="menu_camera_capture" name="تصوير دفتر الآن" parent="menu_camera" sequence="1" action="action_camera"/>

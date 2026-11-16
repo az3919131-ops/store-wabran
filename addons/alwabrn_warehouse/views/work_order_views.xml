@@ -1,0 +1,226 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_wo_import_wizard" model="ir.ui.view">
+        <field name="name">alwabrn.wo.import.wizard.form</field>
+        <field name="model">alwabrn.wo.import.wizard</field>
+        <field name="arch" type="xml">
+            <form string="استيراد أوامر العمل">
+                <field name="state" invisible="1"/>
+                <div class="text-muted" invisible="state != 'upload'">
+                    ملف «أوامر عمل المشاريع»: كل ورقة مرحلة (تم التسليم · تم الاستلام · الرسم · دخلت مستخلص). يُحدَّث الموجود ولا يتكرر.
+                </div>
+                <group invisible="state != 'upload'"><field name="file" filename="filename"/><field name="filename" invisible="1"/></group>
+                <field name="summary" invisible="state != 'done'"/>
+                <footer>
+                    <button name="action_import" type="object" string="استيراد" class="btn-primary" invisible="state != 'upload'"/>
+                    <button special="cancel" string="إغلاق"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+    <record id="action_wo_import_wizard" model="ir.actions.act_window">
+        <field name="name">استيراد ملف أوامر العمل</field>
+        <field name="res_model">alwabrn.wo.import.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+    <record id="view_wo_list" model="ir.ui.view">
+        <field name="name">alwabrn.work.order.list</field>
+        <field name="model">alwabrn.work.order</field>
+        <field name="arch" type="xml">
+            <list string="أوامر العمل">
+                <header>
+                    <button name="action_sync_minutes" type="object" string="تحديث واستيراد من منصة محاضر الاستلام"
+                            class="btn-primary" display="always" icon="fa-refresh" groups="alwabrn_warehouse.group_alw_employee"/>
+                    <button name="%(alwabrn_warehouse.action_wo_import_wizard)d" type="action" string="استيراد ملف Excel"
+                            display="always" icon="fa-file-excel-o" groups="alwabrn_warehouse.group_alw_manager"/>
+                </header>
+                <field name="name"/>
+                <field name="type_summary"/>
+                <field name="stage" widget="badge"/>
+                <field name="status_note" optional="show"/>
+                <field name="contractor" optional="show"/>
+                <field name="location" optional="hide"/>
+                <field name="responsible" optional="show"/>
+                <field name="consultant" optional="hide"/>
+                <field name="labor_cost" optional="hide" sum="الإجمالي"/>
+                <field name="minutes_count"/>
+                <field name="tx_count"/>
+                <field name="source" optional="show"/>
+            </list>
+        </field>
+    </record>
+    <record id="view_wo_form" model="ir.ui.view">
+        <field name="name">alwabrn.work.order.form</field>
+        <field name="model">alwabrn.work.order</field>
+        <field name="arch" type="xml">
+            <form string="أمر عمل">
+                <header>
+                    <button name="action_issue" type="object" string="صرف مواد لأمر العمل" class="btn-primary"
+                            groups="alwabrn_warehouse.group_alw_employee"/>
+                    <button name="action_return" type="object" string="إرجاع مواد (من عهدة أمر العمل)"
+                            groups="alwabrn_warehouse.group_alw_employee"/>
+                    <button name="action_return_legacy" type="object" string="إرجاع مواد صُرفت قبل النظام"
+                            groups="alwabrn_warehouse.group_alw_employee"/>
+                    <button name="action_sync_minutes" type="object" string="تحديث من منصة المحاضر"
+                            groups="alwabrn_warehouse.group_alw_employee"/>
+                </header>
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_view_transactions" type="object" class="oe_stat_button" icon="fa-exchange">
+                            <field name="tx_count" widget="statinfo" string="حركات الصرف/الإرجاع"/>
+                        </button>
+                        <button name="action_view_minutes" type="object" class="oe_stat_button" icon="fa-file-text-o">
+                            <field name="minutes_count" widget="statinfo" string="محاضر الاستلام"/>
+                        </button>
+                    </div>
+                    <div class="oe_title">
+                        <label for="name"/>
+                        <h1><field name="name" placeholder="مثال: 254043523" readonly="id"/></h1>
+                        <h4><field name="type_summary" readonly="1"/></h4>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="stage"/>
+                            <field name="status_note" readonly="1"/>
+                            <field name="contractor"/>
+                            <field name="location"/>
+                        </group>
+                        <group>
+                            <field name="responsible"/>
+                            <field name="consultant"/>
+                            <field name="labor_cost" readonly="1"/>
+                            <field name="source"/>
+                            <field name="site_id"/>
+                            <field name="last_minutes_sync"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="المواد: الكهرباء (المحاضر) مقابل المستودع" name="materials">
+                            <div class="text-muted">
+                                أعمدة «محضر» تُسحب آلياً من منصة محاضر الاستلام (قراءة فقط). «صرف/إرجاع المستودع» من حركات المخزون المعتمدة لهذا الأمر.
+                                لإضافة مواد استخدم أزرار الصرف والإرجاع بالأعلى.
+                            </div>
+                            <field name="material_ids">
+                                <list create="0" delete="0" decoration-danger="diff_issue &lt; 0" decoration-warning="diff_issue &gt; 0">
+                                    <field name="sec_code"/>
+                                    <field name="name"/>
+                                    <field name="unit_text" optional="hide"/>
+                                    <field name="sec_estimated" optional="hide"/>
+                                    <field name="sec_issued"/>
+                                    <field name="sec_returned"/>
+                                    <field name="sec_erected"/>
+                                    <field name="sec_remaining" optional="hide"/>
+                                    <field name="wh_issued"/>
+                                    <field name="wh_returned"/>
+                                    <field name="wh_net"/>
+                                    <field name="diff_issue"/>
+                                    <field name="uom_id"/>
+                                    <field name="minutes_refs" optional="hide"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="حركات الصرف والإرجاع" name="tx">
+                            <field name="transaction_ids" readonly="1">
+                                <list>
+                                    <field name="name"/><field name="date"/><field name="tx_type"/><field name="line_count"/>
+                                    <field name="state" widget="badge" decoration-success="state == 'posted'" decoration-warning="state == 'pending'"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="بنود أمر العمل (ملف المشاريع)" name="items">
+                            <field name="item_ids">
+                                <list editable="bottom">
+                                    <field name="type_code"/><field name="type_name"/><field name="stage"/>
+                                    <field name="delivery_date"/><field name="receipt_date" optional="show"/>
+                                    <field name="labor_cost" sum="الإجمالي"/><field name="status_note"/>
+                                    <field name="responsible" optional="show"/><field name="plan" optional="show"/>
+                                    <field name="location_details" optional="hide"/><field name="consultant" optional="hide"/>
+                                    <field name="extract_no" optional="hide"/><field name="extract_date" optional="hide"/>
+                                    <field name="completion_date" optional="hide"/><field name="completion_amount" optional="hide"/>
+                                    <field name="license" optional="hide"/><field name="sheet" optional="hide"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="محاضر الاستلام" name="minutes">
+                            <field name="minutes_ids" readonly="1">
+                                <list>
+                                    <field name="request_no"/><field name="status"/><field name="contractor"/>
+                                    <field name="location"/><field name="work_date"/><field name="material_count"/><field name="remote_updated"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="ملاحظات"><field name="note"/></page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+    <record id="view_wo_search" model="ir.ui.view">
+        <field name="name">alwabrn.work.order.search</field>
+        <field name="model">alwabrn.work.order</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name" string="رقم أمر العمل / المقاول / الموقع"
+                       filter_domain="['|', '|', '|', ('name', 'ilike', self), ('contractor', 'ilike', self), ('location', 'ilike', self), ('status_note', 'ilike', self)]"/>
+                <field name="responsible"/>
+                <field name="material_ids" string="كود مادة" filter_domain="[('material_ids.sec_code', 'ilike', self)]"/>
+                <filter name="has_minutes" string="لها محاضر" domain="[('minutes_ids', '!=', False)]"/>
+                <filter name="has_tx" string="لها صرف/إرجاع" domain="[('transaction_ids', '!=', False)]"/>
+                <filter name="return_pending" string="باقي ارجاع مواد" domain="[('status_note', 'ilike', 'ارجاع')]"/>
+                <separator/>
+                <filter name="st_delivered" string="تم التسليم للمقاول" domain="[('stage', '=', 'delivered')]"/>
+                <filter name="st_received" string="تم الاستلام" domain="[('stage', '=', 'received')]"/>
+                <filter name="st_drawing" string="باقي الرسم" domain="[('stage', '=', 'drawing')]"/>
+                <filter name="st_extract" string="دخلت مستخلص" domain="[('stage', '=', 'extract')]"/>
+                <filter name="st_minutes" string="جديدة من المحاضر" domain="[('stage', '=', 'minutes')]"/>
+                <group>
+                    <filter name="g_stage" string="المرحلة" context="{'group_by': 'stage'}"/>
+                    <filter name="g_resp" string="المسؤول" context="{'group_by': 'responsible'}"/>
+                    <filter name="g_source" string="المصدر" context="{'group_by': 'source'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+    <record id="action_work_orders" model="ir.actions.act_window">
+        <field name="name">أوامر العمل</field>
+        <field name="res_model">alwabrn.work.order</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html"><p class="o_view_nocontent_smiling_face">أضف أمر عمل جديداً، أو استورد ملف أوامر العمل، أو حدّث من منصة المحاضر</p></field>
+    </record>
+    <record id="view_minutes_record_list" model="ir.ui.view">
+        <field name="name">alwabrn.minutes.record.list</field>
+        <field name="model">alwabrn.minutes.record</field>
+        <field name="arch" type="xml">
+            <list string="محاضر الاستلام" create="0" edit="0">
+                <field name="request_no"/><field name="work_order_id"/><field name="status"/><field name="contractor"/>
+                <field name="location"/><field name="work_date"/><field name="material_count"/><field name="remote_updated"/>
+            </list>
+        </field>
+    </record>
+    <record id="view_minutes_record_form" model="ir.ui.view">
+        <field name="name">alwabrn.minutes.record.form</field>
+        <field name="model">alwabrn.minutes.record</field>
+        <field name="arch" type="xml">
+            <form string="محضر استلام" create="0" edit="0">
+                <sheet><group>
+                    <group><field name="request_no"/><field name="work_order_id"/><field name="status"/><field name="contractor"/></group>
+                    <group><field name="location"/><field name="work_date"/><field name="remote_updated"/><field name="mahdar_id"/></group>
+                </group>
+                <field name="materials_data"/></sheet>
+            </form>
+        </field>
+    </record>
+    <record id="action_minutes_records" model="ir.actions.act_window">
+        <field name="name">محاضر الاستلام (من منصة التزام)</field>
+        <field name="res_model">alwabrn.minutes.record</field>
+        <field name="view_mode">list,form</field>
+    </record>
+    <record id="action_wo_sync_server" model="ir.actions.server">
+        <field name="name">تحديث أوامر العمل من منصة المحاضر</field>
+        <field name="model_id" ref="model_alwabrn_work_order"/>
+        <field name="state">code</field>
+        <field name="code">action = model.action_sync_minutes()</field>
+    </record>
+</odoo>
