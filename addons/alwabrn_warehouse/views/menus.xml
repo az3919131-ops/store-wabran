@@ -32,7 +32,7 @@
         <field name="view_mode">list,form</field>
     </record>
 
-    <menuitem id="menu_root" name="الوبران للمستودعات" sequence="1" web_icon="alwabrn_warehouse,static/description/icon.png"
+    <menuitem id="menu_root" name="IltizamSMART" sequence="1" web_icon="alwabrn_warehouse,static/description/icon.png"
               groups="group_alw_auditor,group_alw_supervisor,group_alw_employee"/>
     <menuitem id="menu_home" name="الرئيسية" parent="menu_root" sequence="1" action="action_dashboard"/>
     <menuitem id="menu_materials" name="المواد والأصناف" parent="menu_root" sequence="2" action="action_materials"

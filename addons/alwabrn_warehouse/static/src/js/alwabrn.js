@@ -254,3 +254,11 @@ export class AlwAssistant extends AlwBase {
     }
 }
 registry.category("actions").add("alwabrn_assistant", AlwAssistant);
+
+// Brand the browser tab: "IltizamSMART - <page>" instead of "Odoo"
+registry.category("services").add("alwabrn_brand", {
+    dependencies: ["title"],
+    start(env, { title }) {
+        title.setParts({ brand: "IltizamSMART" });
+    },
+});

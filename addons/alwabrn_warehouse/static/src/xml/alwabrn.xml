@@ -15,7 +15,8 @@
         <div class="alw_page o_action" dir="rtl">
             <div class="alw_header">
                 <div>
-                    <h1>نظام الوبران الذكي لإدارة المواد والمستودعات</h1>
+                    <h1>IltizamSMART</h1>
+                    <div class="alw_sub"><b>نظام الوبران الذكي لإدارة المواد والمستودعات</b></div>
                     <div class="alw_sub">شركة الوبران — العقد الموحد للشركة السعودية للكهرباء — فرع نجران</div>
                 </div>
                 <button class="btn btn-light" t-on-click="() => this.load()"><i class="fa fa-refresh"/> تحديث</button>
