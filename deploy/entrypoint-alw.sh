@@ -17,13 +17,22 @@ try:
                          password=os.environ["DB_PASSWORD"], dbname=os.environ["DB_NAME"],
                          sslmode=os.environ.get("DB_SSLMODE") or "prefer")
     cur = c.cursor()
-    cur.execute("select state from ir_module_module where name='alwabrn_warehouse'")
-    r = cur.fetchone(); print(r[0] if r else "none")
+    cur.execute("select state, latest_version from ir_module_module where name='alwabrn_warehouse'")
+    r = cur.fetchone()
+    if not r:
+        print("none")
+    else:
+        import ast
+        manifest = ast.literal_eval(open("/mnt/extra-addons/alwabrn_warehouse/__manifest__.py").read())
+        print(r[0] if r[0] != "installed" or (r[1] or "") == manifest["version"] else "outdated")
 except Exception:
     print("none")
 PY
 )
-if [ "$installed" != "installed" ]; then
+if [ "$installed" = "outdated" ]; then
+    echo "Upgrading alwabrn_warehouse in $DB_NAME"
+    odoo "${ARGS[@]}" -u alwabrn_warehouse --stop-after-init --no-http
+elif [ "$installed" != "installed" ]; then
     echo "First run: installing alwabrn_warehouse into $DB_NAME"
     odoo "${ARGS[@]}" -i alwabrn_warehouse --stop-after-init --no-http
 fi
@@ -58,6 +67,15 @@ if os.environ.get("ALW_ATTACHMENTS_IN_DB", "1") == "1":
         env["res.company"].sudo().search([])._update_asset_style()
     print("ATTACHMENTS_IN_DB=ON missing_files_cleaned=%s" % lost)
 env.cr.commit()
+# Encrypted seed data (catalog + opening stock count). Loaded once; safe to re-run.
+if os.environ.get("ALWABRN_DATA_KEY") and os.path.isdir("/opt/alwabrn-seed"):
+    try:
+        from odoo.addons.alwabrn_warehouse.hooks import load_seed_files
+        print("SEED_RESULT %s" % load_seed_files(env, "/opt/alwabrn-seed", os.environ["ALWABRN_DATA_KEY"]))
+        env.cr.commit()
+    except Exception as e:
+        env.cr.rollback()
+        print("SEED_FAILED %s: %s" % (type(e).__name__, e))
 try:
     env["res.users"].sudo()._login({"type": "password", "login": "admin", "password": pw}, {"interactive": False})
     print("ADMIN_PASSWORD_CHECK=OK")

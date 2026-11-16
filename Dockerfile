@@ -7,6 +7,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/* \
     && pip3 install --no-cache-dir --break-system-packages pytesseract pdf2image pillow-heif openpyxl xlsxwriter
 COPY addons/alwabrn_warehouse /mnt/extra-addons/alwabrn_warehouse
+COPY deploy/seed /opt/alwabrn-seed
 COPY deploy/entrypoint-alw.sh /entrypoint-alw.sh
 RUN chmod +x /entrypoint-alw.sh
 USER odoo
