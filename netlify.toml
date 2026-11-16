@@ -1,3 +1,15 @@
-# Netlify hosts only the static project page. The Odoo application itself needs a server (see deploy/).
+# Netlify serves the project page; /app (and /login) send the user to the live Odoo system on Render.
 [build]
   publish = "site"
+
+[[redirects]]
+  from = "/app"
+  to = "https://alwabrn-inventory.onrender.com/odoo/action-alwabrn_warehouse.action_dashboard"
+  status = 302
+  force = true
+
+[[redirects]]
+  from = "/login"
+  to = "https://alwabrn-inventory.onrender.com/web/login"
+  status = 302
+  force = true
