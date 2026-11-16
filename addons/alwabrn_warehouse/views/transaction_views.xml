@@ -11,7 +11,7 @@
                 <field name="tx_type"/>
                 <field name="site_id" optional="show"/>
                 <field name="project_id" optional="show"/>
-                <field name="work_order" optional="show"/>
+                <field name="work_order_id" optional="show"/>
                 <field name="document_ref" optional="show"/>
                 <field name="line_count"/>
                 <field name="employee_id" optional="show"/>
@@ -52,10 +52,11 @@
                             <field name="site_id" readonly="state != 'draft'"
                                    invisible="tx_type in ('opening', 'receipt', 'issue', 'return_out', 'adj_plus', 'adj_minus', 'transfer')"
                                    required="tx_type in ('issue_site', 'return_in', 'consume')"/>
-                            <field name="work_order_id" readonly="state != 'draft'" options="{'no_create': True}"
+                            <field name="work_order_id" readonly="state != 'draft'" options="{'no_create_edit': True}"
+                                   placeholder="اختر أو اكتب رقم أمر عمل جديد"
                                    required="tx_type == 'return_legacy'"/>
                             <field name="project_id" readonly="state != 'draft'"/>
-                            <field name="work_order" readonly="state != 'draft'" invisible="work_order_id"/>
+                            <field name="work_order" invisible="1"/>
                         </group>
                         <group>
                             <field name="document_ref" readonly="state in ('posted', 'reversed')"/>
@@ -120,7 +121,7 @@
                 <field name="name" filter_domain="['|', '|', ('name', 'ilike', self), ('document_ref', 'ilike', self), ('line_ids.sec_code', 'ilike', self)]" string="رقم / مستند / كود SEC"/>
                 <field name="site_id"/>
                 <field name="project_id"/>
-                <field name="work_order"/>
+                <field name="work_order_id"/>
                 <filter name="pending" string="بانتظار الاعتماد" domain="[('state', 'in', ('draft', 'pending'))]"/>
                 <filter name="posted" string="مرحّلة" domain="[('state', '=', 'posted')]"/>
                 <filter name="date" string="التاريخ" date="date"/>

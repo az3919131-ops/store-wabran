@@ -32,6 +32,7 @@ REPORTS = [
     ("pending", "الاعتمادات المعلقة"),
     ("audit", "سجل التدقيق"),
     ("executive", "الملخص التنفيذي للإدارة"),
+    ("work_order", "تقرير أمر العمل: المستلم والمصروف والمسلّم والمنفذ والراجع"),
 ]
 
 
@@ -61,6 +62,8 @@ class AlwabrnReportEngine(models.AbstractModel):
             dom.append(("transaction_id.project_id", "=", f["project_id"]))
         if f.get("work_order"):
             dom.append(("transaction_id.work_order", "=", f["work_order"]))
+        if f.get("work_order_id"):
+            dom.append(("transaction_id.work_order_id", "=", f["work_order_id"]))
         if f.get("categ_id"):
             dom.append(("product_id.categ_id", "child_of", f["categ_id"]))
         if f.get("product_id"):
@@ -74,12 +77,13 @@ class AlwabrnReportEngine(models.AbstractModel):
                 ("sec", "كود SEC", "text"), ("desc", "الوصف", "text"), ("qty", "الكمية", "qty"),
                 ("uom", "الوحدة", "text"), ("site", "الموقع", "text"), ("project", "المشروع", "text"),
                 ("wo", "أمر العمل", "text"), ("doc", "مرجع المستند", "text"), ("status", "الحالة", "text")]
+        # (wo column shows the linked work order when there is one)
         rows = [{
             "date": fields.Datetime.context_timestamp(self.with_context(tz="Asia/Riyadh"), l.date).replace(tzinfo=None),
             "name": l.transaction_id.name, "type": labels.get(l.tx_type), "sec": l.sec_code,
             "desc": l.product_id.name, "qty": l.qty_product_uom, "uom": l.product_id.uom_id.name,
             "site": l.site_id.display_name or "", "project": l.transaction_id.project_id.name or "",
-            "wo": l.transaction_id.work_order or "", "doc": l.transaction_id.document_ref or "",
+            "wo": l.transaction_id.work_order_id.name or l.transaction_id.work_order or "", "doc": l.transaction_id.document_ref or "",
             "status": "معكوسة" if l.state == "reversed" else "مرحّلة"} for l in lines]
         by_unit = {}
         for r in rows:
@@ -263,6 +267,35 @@ class AlwabrnReportEngine(models.AbstractModel):
                  "model": l.res_model, "note": l.note or "", "details": l.details or ""} for l in logs]
         return cols, rows, [("عدد السجلات", len(rows))]
 
+    def _r_work_order(self, f):
+        """One row per work order × material: received from SEC, ISSUE (minutes), delivered to site,
+        installed, returned to warehouse, returned to SEC and balance at site. All dates (no period cut)."""
+        WO = self.env["alwabrn.work.order"].sudo()
+        dom = [("id", "=", f["work_order_id"])] if f.get("work_order_id") else [("material_ids", "!=", False)]
+        cols = [("wo", "أمر العمل", "text"), ("type", "نوع أمر العمل", "text"), ("sec", "كود SEC", "text"),
+                ("desc", "الوصف", "text"), ("uom", "الوحدة", "text"),
+                ("rec", "مستلم من الكهرباء", "qty"), ("iss_sec", "مصروف من الكهرباء ISSUE (محضر)", "qty"),
+                ("iss", "مسلّم للموقع", "qty"), ("erc", "المنفذ", "qty"), ("ret", "راجع للمستودع", "qty"),
+                ("ret_sec", "مرتجع للكهرباء", "qty"), ("ret_min", "المرتجع حسب المحضر", "qty"),
+                ("net", "باقي بالموقع", "qty"), ("diff", "فرق التسليم عن ISSUE", "qty")]
+        rows = []
+        orders = WO.search(dom, order="name")
+        for wo in orders:
+            for m in wo.material_ids.sorted("sec_code"):
+                rows.append({"wo": wo.name, "type": wo.type_summary or "", "sec": m.sec_code, "desc": m.name or "",
+                             "uom": m.uom_id.name or m.unit_text or "", "rec": m.wh_received, "iss_sec": m.sec_issued,
+                             "iss": m.wh_issued, "erc": m.erected, "ret": m.wh_returned, "ret_sec": m.wh_returned_sec,
+                             "ret_min": m.sec_returned, "net": m.wh_net, "diff": m.diff_issue})
+        summary = [("عدد أوامر العمل", len(orders)), ("عدد بنود المواد", len(rows))]
+        if f.get("work_order_id") and orders:
+            wo = orders[0]
+            summary += [("أمر العمل", wo.name), ("النوع", wo.type_summary or "—"), ("المرحلة", dict(
+                wo._fields["stage"]._description_selection(self.env)).get(wo.stage) or "—"),
+                ("المقاول", wo.contractor or "—"), ("الموقع", wo.location or "—"), ("الموقف", wo.status_note or "—"),
+                ("محاضر الاستلام", wo.minutes_count), ("حركات المستودع", wo.tx_count)]
+        summary.append(("ملاحظة", "المنفذ = حسب المحضر أو الاستهلاك المسجل أيهما أكبر · الباقي بالموقع = المسلّم − الراجع − المنفذ"))
+        return cols, rows, summary
+
     def _r_executive(self, f):
         data = self.env["alwabrn.dashboard"].get_data({"date_from": str(f["date_from"]), "date_to": str(f["date_to"])})
         cols = [("kpi", "المؤشر", "text"), ("value", "القيمة", "text")]
@@ -281,7 +314,8 @@ class AlwabrnReportEngine(models.AbstractModel):
         parts = []
         for key, model, label in (("site_id", "alwabrn.site", "الموقع"), ("project_id", "alwabrn.project", "المشروع"),
                                   ("categ_id", "product.category", "الفئة"), ("product_id", "product.product", "المادة"),
-                                  ("location_id", "stock.location", "المستودع")):
+                                  ("location_id", "stock.location", "المستودع"),
+                                  ("work_order_id", "alwabrn.work.order", "أمر العمل")):
             if f.get(key):
                 parts.append("%s: %s" % (label, self.env[model].sudo().browse(f[key]).display_name))
         if f.get("work_order"):

@@ -61,8 +61,7 @@ class TestWorkOrders(AlwCase):
         self.assertEqual(self.qty(self.ea, site.location_id), 15)
         self.assertEqual(tx.work_order_id, wo)
         # material line (e.g. created from minutes) shows warehouse issue/return for the work order
-        line = self.env["alwabrn.work.order.material"].create({
-            "work_order_id": wo.id, "sec_code": self.ea.alw_sec_code, "product_id": self.ea.id})
+        line = wo.material_ids.filtered(lambda l: l.product_id == self.ea)      # created automatically
         self.assertEqual((line.wh_issued, line.wh_returned, line.wh_net), (20, 5, 15))
         # cannot return more than the work order custody
         bad = self.tx("return_in", self.ea, 16, site=site, work_order_id=wo.id, post=False)
@@ -75,8 +74,7 @@ class TestWorkOrders(AlwCase):
         tx = self.tx("return_legacy", self.ea, 7, work_order_id=wo.id)
         self.assertEqual(tx.state, "posted")
         self.assertEqual(self.qty(self.ea), 7)
-        line = self.env["alwabrn.work.order.material"].create({
-            "work_order_id": wo.id, "sec_code": self.ea.alw_sec_code, "product_id": self.ea.id})
+        line = wo.material_ids.filtered(lambda l: l.product_id == self.ea)
         self.assertEqual(line.wh_returned, 7)
         no_wo = self.tx("return_legacy", self.ea, 1, post=False)
         with self.assertRaises(UserError):
@@ -151,3 +149,30 @@ class TestWorkOrders(AlwCase):
         with self.assertRaises(Exception):
             WO.with_user(self.auditor).create({"name": "123456789"})
         WO.with_user(self.employee).create({"name": "123456789"})
+
+    def test_07_full_work_order_ledger_and_report(self):
+        WO = self.env["alwabrn.work.order"]
+        wo = WO.create({"name": "254099001"})
+        p = self.ea
+        self.tx("receipt", p, 40, work_order_id=wo.id)                      # received from SEC for this WO
+        site = wo._ensure_site()
+        self.tx("issue_site", p, 30, site=site, work_order_id=wo.id)        # delivered to site
+        self.tx("consume", p, 20, site=site, work_order_id=wo.id)           # installed
+        self.tx("return_in", p, 4, site=site, work_order_id=wo.id)          # back to warehouse
+        self.tx("return_out", p, 2, work_order_id=wo.id)                    # returned to SEC
+        line = wo.material_ids.filtered(lambda l: l.product_id == p)
+        self.assertEqual(len(line), 1, "material line is created automatically from the movements")
+        self.assertEqual((line.wh_received, line.wh_issued, line.erected, line.wh_returned, line.wh_returned_sec, line.wh_net),
+                         (40, 30, 20, 4, 2, 6))
+        self.assertEqual(self.qty(p), 40 - 30 + 4 - 2)
+        rep = self.env["alwabrn.report.engine"].get_report("work_order", {"work_order_id": wo.id})
+        row = [r for r in rep["rows"] if r["sec"] == p.alw_sec_code][0]
+        self.assertEqual((row["rec"], row["iss"], row["erc"], row["ret"], row["ret_sec"], row["net"]), (40, 30, 20, 4, 2, 6))
+        self.assertIn(("أمر العمل", wo.name), rep["summary"])
+        self.assertIn("أمر العمل: %s" % wo.name, rep["filters"])
+        content = self.env["alwabrn.report.engine"].render_xlsx(rep)
+        self.assertEqual(content[:2], b"PK")
+        mv = self.env["alwabrn.report.engine"].get_report("movements", {"work_order_id": wo.id, "date_from": "2015-01-01"})
+        self.assertEqual(len(mv["rows"]), 5)
+        self.assertTrue(all(r["wo"] == wo.name for r in mv["rows"]))
+        self.assertEqual(wo.action_report()["context"]["default_work_order_id"], wo.id)

@@ -203,6 +203,7 @@ class AlwabrnReportWizard(models.TransientModel):
     work_order = fields.Char("أمر العمل")
     categ_id = fields.Many2one("product.category", "فئة المواد")
     product_id = fields.Many2one("product.product", "المادة", domain=[("alw_is_material", "=", True)])
+    work_order_id = fields.Many2one("alwabrn.work.order", "أمر العمل")
     file_format = fields.Selection([("xlsx", "Excel"), ("pdf", "PDF"), ("both", "Excel + PDF")],
                                    "الصيغة", default="xlsx", required=True)
     recipient_ids = fields.Many2many("res.partner", string="المستلمون")
@@ -213,7 +214,7 @@ class AlwabrnReportWizard(models.TransientModel):
     def _filters(self):
         return {"date_from": self.date_from, "date_to": self.date_to, "location_id": self.location_id.id,
                 "site_id": self.site_id.id, "project_id": self.project_id.id, "work_order": self.work_order,
-                "categ_id": self.categ_id.id, "product_id": self.product_id.id}
+                "categ_id": self.categ_id.id, "product_id": self.product_id.id, "work_order_id": self.work_order_id.id}
 
     def _reopen(self):
         return {"type": "ir.actions.act_window", "res_model": self._name, "res_id": self.id,

@@ -109,6 +109,12 @@ class AlwabrnWorkOrder(models.Model):
                 "name": "حركات أمر العمل %s" % self.name, "domain": [("work_order_id", "=", self.id)],
                 "context": {"default_work_order_id": self.id}}
 
+    def action_report(self):
+        self.ensure_one()
+        return {"type": "ir.actions.act_window", "res_model": "alwabrn.report.wizard", "view_mode": "form", "target": "new",
+                "context": {"default_report_code": "work_order", "default_work_order_id": self.id,
+                            "default_date_from": "2015-01-01"}}
+
     def action_view_minutes(self):
         self.ensure_one()
         return {"type": "ir.actions.act_window", "res_model": "alwabrn.minutes.record", "view_mode": "list,form",
@@ -318,27 +324,37 @@ class AlwabrnWorkOrderMaterial(models.Model):
     sec_returned = fields.Float("المرتجع (محضر)", digits="Product Unit", readonly=True)
     sec_erected = fields.Float("المنفذ (محضر)", digits="Product Unit", readonly=True)
     sec_remaining = fields.Float("المتبقي (محضر)", digits="Product Unit", readonly=True)
-    wh_issued = fields.Float("صرف المستودع", digits="Product Unit", compute="_compute_wh")
-    wh_returned = fields.Float("إرجاع للمستودع", digits="Product Unit", compute="_compute_wh")
-    wh_net = fields.Float("صافي المصروف", digits="Product Unit", compute="_compute_wh")
-    diff_issue = fields.Float("فرق الصرف (مستودع − محضر)", digits="Product Unit", compute="_compute_wh")
+    wh_received = fields.Float("مستلم من الكهرباء", digits="Product Unit", compute="_compute_wh")
+    wh_issued = fields.Float("مسلّم للموقع", digits="Product Unit", compute="_compute_wh")
+    wh_consumed = fields.Float("استهلاك مسجل بالمستودع", digits="Product Unit", compute="_compute_wh")
+    wh_returned = fields.Float("راجع للمستودع", digits="Product Unit", compute="_compute_wh")
+    wh_returned_sec = fields.Float("مرتجع للكهرباء", digits="Product Unit", compute="_compute_wh")
+    erected = fields.Float("المنفذ", digits="Product Unit", compute="_compute_wh",
+                           help="المنفذ حسب المحضر، أو الاستهلاك المسجل بالمستودع إن كان أكبر")
+    wh_net = fields.Float("باقي بالموقع", digits="Product Unit", compute="_compute_wh",
+                          help="المسلّم للموقع − الراجع للمستودع − المنفذ")
+    diff_issue = fields.Float("فرق التسليم (مسلّم − ISSUE)", digits="Product Unit", compute="_compute_wh")
 
     _uniq = models.Constraint("unique(work_order_id, sec_code)", "المادة مكررة في أمر العمل.")
 
-    @api.depends("work_order_id.transaction_ids.state", "product_id")
+    @api.depends("work_order_id.transaction_ids.state", "product_id", "sec_erected", "sec_issued")
     def _compute_wh(self):
         Line = self.env["alwabrn.transaction.line"].sudo()
+        buckets = {"receipt": "rec", "issue_site": "iss", "issue": "iss", "consume": "con",
+                   "return_in": "ret", "return_legacy": "ret", "return_out": "rsec"}
         for m in self:
-            iss = ret = 0.0
+            t = dict.fromkeys(("rec", "iss", "con", "ret", "rsec"), 0.0)
             if m.product_id and m.work_order_id.id:
                 for l in Line.search([("transaction_id.work_order_id", "=", m.work_order_id.id),
                                       ("product_id", "=", m.product_id.id), ("state", "=", "posted")]):
-                    if l.tx_type in ISSUE_TYPES:
-                        iss += l.qty_product_uom
-                    elif l.tx_type in RETURN_TYPES:
-                        ret += l.qty_product_uom
-            m.wh_issued, m.wh_returned, m.wh_net = iss, ret, iss - ret
-            m.diff_issue = iss - m.sec_issued
+                    k = buckets.get(l.tx_type)
+                    if k:
+                        t[k] += l.qty_product_uom
+            m.wh_received, m.wh_issued, m.wh_consumed = t["rec"], t["iss"], t["con"]
+            m.wh_returned, m.wh_returned_sec = t["ret"], t["rsec"]
+            m.erected = max(m.sec_erected, t["con"])
+            m.wh_net = t["iss"] - t["ret"] - m.erected
+            m.diff_issue = t["iss"] - m.sec_issued
 
 
 class AlwabrnMinutesRecord(models.Model):
@@ -377,6 +393,23 @@ class AlwabrnTransactionWO(models.Model):
             self.work_order = self.work_order_id.name
             if self.tx_type in ("issue_site", "return_in", "consume") and not self.site_id:
                 self.site_id = self.work_order_id._ensure_site()
+
+    def _post(self):
+        res = super()._post()
+        Mat = self.env["alwabrn.work.order.material"].sudo()
+        for rec in self.filtered(lambda r: r.work_order_id and r.state == "posted"):
+            have = set(rec.work_order_id.material_ids.mapped("product_id").ids)
+            for product in rec.line_ids.mapped("product_id"):
+                if product.id not in have:
+                    line = rec.work_order_id.material_ids.filtered(lambda l: l.sec_code == product.alw_sec_code)
+                    if line:
+                        line.product_id = product
+                    else:
+                        Mat.create({"work_order_id": rec.work_order_id.id, "product_id": product.id,
+                                    "sec_code": product.alw_sec_code or product.default_code or str(product.id),
+                                    "name": product.name})
+                    have.add(product.id)
+        return res
 
     def _check_ready(self):
         res = super()._check_ready()

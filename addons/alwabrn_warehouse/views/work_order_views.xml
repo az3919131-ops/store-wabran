@@ -62,6 +62,7 @@
                             groups="alwabrn_warehouse.group_alw_employee"/>
                     <button name="action_return_legacy" type="object" string="إرجاع مواد صُرفت قبل النظام"
                             groups="alwabrn_warehouse.group_alw_employee"/>
+                    <button name="action_report" type="object" string="تقرير أمر العمل (Excel / PDF)"/>
                     <button name="action_sync_minutes" type="object" string="تحديث من منصة المحاضر"
                             groups="alwabrn_warehouse.group_alw_employee"/>
                 </header>
@@ -98,7 +99,7 @@
                     <notebook>
                         <page string="المواد: الكهرباء (المحاضر) مقابل المستودع" name="materials">
                             <div class="text-muted">
-                                أعمدة «محضر» تُسحب آلياً من منصة محاضر الاستلام (قراءة فقط). «صرف/إرجاع المستودع» من حركات المخزون المعتمدة لهذا الأمر.
+                                كل حركة استلام أو صرف أو إرجاع تحمل رقم هذا الأمر تظهر هنا تلقائياً. «ISSUE» و«المرتجع (محضر)» من منصة محاضر الاستلام.
                                 لإضافة مواد استخدم أزرار الصرف والإرجاع بالأعلى.
                             </div>
                             <field name="material_ids">
@@ -107,14 +108,18 @@
                                     <field name="name"/>
                                     <field name="unit_text" optional="hide"/>
                                     <field name="sec_estimated" optional="hide"/>
+                                    <field name="wh_received"/>
                                     <field name="sec_issued"/>
-                                    <field name="sec_returned"/>
-                                    <field name="sec_erected"/>
-                                    <field name="sec_remaining" optional="hide"/>
                                     <field name="wh_issued"/>
+                                    <field name="erected"/>
+                                    <field name="sec_erected" optional="hide"/>
+                                    <field name="wh_consumed" optional="hide"/>
                                     <field name="wh_returned"/>
+                                    <field name="wh_returned_sec"/>
+                                    <field name="sec_returned" optional="show"/>
                                     <field name="wh_net"/>
-                                    <field name="diff_issue"/>
+                                    <field name="diff_issue" optional="show"/>
+                                    <field name="sec_remaining" optional="hide"/>
                                     <field name="uom_id"/>
                                     <field name="minutes_refs" optional="hide"/>
                                 </list>
