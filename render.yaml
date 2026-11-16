@@ -1,0 +1,33 @@
+# Render Blueprint: Odoo 19 + alwabrn_warehouse + PostgreSQL 16 (Frankfurt, closest region to Najran)
+databases:
+  - name: alwabrn-db
+    plan: free
+    region: frankfurt
+    postgresMajorVersion: "16"
+    databaseName: alwabrn_db
+    user: alwabrn_db_user
+
+services:
+  - type: web
+    name: alwabrn-inventory
+    runtime: docker
+    plan: free
+    region: frankfurt
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    autoDeploy: true
+    envVars:
+      - key: DB_HOST
+        fromDatabase: {name: alwabrn-db, property: host}
+      - key: DB_PORT
+        fromDatabase: {name: alwabrn-db, property: port}
+      - key: DB_USER
+        fromDatabase: {name: alwabrn-db, property: user}
+      - key: DB_PASSWORD
+        fromDatabase: {name: alwabrn-db, property: password}
+      - key: DB_NAME
+        fromDatabase: {name: alwabrn-db, property: database}
+      - key: ADMIN_PASSWORD
+        generateValue: true
+      - key: ALWABRN_SECRET_KEY
+        generateValue: true
