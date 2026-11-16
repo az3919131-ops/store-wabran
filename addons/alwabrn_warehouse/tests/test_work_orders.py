@@ -176,3 +176,51 @@ class TestWorkOrders(AlwCase):
         self.assertEqual(len(mv["rows"]), 5)
         self.assertTrue(all(r["wo"] == wo.name for r in mv["rows"]))
         self.assertEqual(wo.action_report()["context"]["default_work_order_id"], wo.id)
+
+    def _wiz(self, rec, method, content, filename):
+        import base64
+        act = getattr(rec, "action_import_" + method)()
+        return self.env["alwabrn.line.import.wizard"].with_context(act["context"]).create(
+            {"file": base64.b64encode(content), "filename": filename})
+
+    def test_08_import_lines_excel_into_draft_issue(self):
+        self.tx("opening", self.ea, 100)
+        tx = self.Tx.create({"tx_type": "issue_site", "site_id": self.site.id})
+        content = self.xlsx([(int(self.ea.alw_sec_code), 12, "EA"), (int(self.p1.alw_sec_code), 500, "M"), (123456789, 3, "EA")])
+        wiz = self._wiz(tx, "excel", content, "issue.xlsx")
+        wiz.action_extract()
+        self.assertEqual(wiz.state, "preview")
+        self.assertEqual(len(wiz.line_ids), 3)
+        unknown = wiz.line_ids.filtered(lambda l: l.sec_code == "123456789")
+        self.assertFalse(unknown.include or unknown.product_id, "unknown code is never matched or added")
+        wiz.action_apply()
+        self.assertEqual(len(tx.line_ids), 2)
+        cable = tx.line_ids.filtered(lambda l: l.product_id == self.p1)
+        self.assertEqual((cable.quantity, cable.uom_id), (500, self.m))
+        self.assertAlmostEqual(cable.qty_product_uom, 0.5, places=6)
+        self.assertEqual(tx.state, "draft", "import only fills the draft — nothing is posted")
+        self.assertEqual(self.qty(self.ea), 100)
+        self.assertTrue(tx.source_document_ids)
+
+    def test_09_import_lines_camera_and_snapshot(self):
+        from unittest.mock import patch
+        OCR = "odoo.addons.alwabrn_warehouse.models.source_document.AlwabrnOcrExtraction._ocr_tesseract"
+        tx = self.Tx.create({"tx_type": "receipt"})
+        lines = [{"text": "%s 7" % self.ea.alw_sec_code, "conf": 95.0}, {"text": "9081?1?01 3", "conf": 30.0}]
+        wiz = self._wiz(tx, "camera", __import__("base64").b64decode(self.png("x", 9)), "camera.jpg")
+        with patch(OCR, return_value=lines):
+            wiz.action_extract()
+        self.assertEqual(len(wiz.line_ids.filtered("include")), 1, "unreadable/uncertain line is not pre-selected")
+        self.assertTrue(wiz.preview_image)
+        wiz.action_apply()
+        self.assertEqual(tx.line_ids.quantity, 7)
+        # balance statement: same material twice is merged
+        snap = self.env["alwabrn.daily.snapshot"].create({"line_ids": [(0, 0, {"product_id": self.ea.id, "quantity": 5})]})
+        wiz = self._wiz(snap, "excel", self.xlsx([(int(self.ea.alw_sec_code), 4, "EA")]), "bal.xlsx")
+        wiz.action_extract()
+        wiz.action_apply()
+        self.assertEqual((len(snap.line_ids), snap.line_ids.quantity), (1, 9))
+        # posted documents cannot receive lines
+        posted = self.tx("receipt", self.ea, 1)
+        with self.assertRaises(UserError):
+            self._wiz(posted, "excel", self.xlsx([(int(self.ea.alw_sec_code), 1, "EA")]), "x.xlsx").action_extract()

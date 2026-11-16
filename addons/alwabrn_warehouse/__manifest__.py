@@ -1,7 +1,7 @@
 {
     "name": "IltizamSMART — نظام الوبران الذكي لإدارة المواد والمستودعات",
     "summary": "Al Wabran Smart Inventory - SEC unified contract warehouse (Najran)",
-    "version": "19.0.1.1.1",
+    "version": "19.0.1.2.0",
     "category": "Supply Chain/Inventory",
     "author": "Al Wabran Co. - Project manager Eng Ahmed Zahran",
     "license": "LGPL-3",

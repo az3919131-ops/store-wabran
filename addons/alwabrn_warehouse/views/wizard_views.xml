@@ -171,4 +171,50 @@
             </form>
         </field>
     </record>
+    <record id="view_line_import_wizard" model="ir.ui.view">
+        <field name="name">alwabrn.line.import.wizard.form</field>
+        <field name="model">alwabrn.line.import.wizard</field>
+        <field name="arch" type="xml">
+            <form string="استيراد أسطر المواد">
+                <field name="state" invisible="1"/><field name="res_model" invisible="1"/><field name="res_id" invisible="1"/>
+                <group invisible="state != 'upload'">
+                    <field name="method" widget="radio" options="{'horizontal': true}"/>
+                    <field name="file" filename="filename" invisible="method != 'excel'"
+                           options="{'accepted_file_extensions': '.xlsx,.xls,.csv'}"/>
+                    <field name="file" filename="filename" invisible="method != 'image'"
+                           options="{'accepted_file_extensions': 'image/*,.pdf,.heic'}"/>
+                    <field name="file" widget="alw_camera" invisible="method != 'camera'"/>
+                    <field name="filename" invisible="1"/>
+                </group>
+                <div class="text-muted" invisible="state != 'upload'">
+                    Excel: عمود كود SEC وعمود الكمية (والوحدة اختياري) — تُكتشف الأعمدة آلياً.
+                    صورة/كاميرا: صوّر الدفتر أو الكشف بوضوح؛ يُقرأ كود SEC والكمية، والأسطر غير المؤكدة لا تُضاف إلا بعد مراجعتك.
+                </div>
+                <div class="alert alert-warning" role="alert" invisible="not message"><field name="message" nolabel="1"/></div>
+                <div class="row" invisible="state != 'preview'">
+                    <div class="col-lg-4" invisible="not preview_image"><field name="preview_image" widget="image" options="{'zoom': true}" class="alw_doc_image"/></div>
+                    <div class="col">
+                        <field name="line_ids">
+                            <list editable="bottom" create="0" decoration-muted="not include" decoration-danger="not usable">
+                                <field name="include" widget="boolean_toggle"/>
+                                <field name="raw_text"/>
+                                <field name="product_id" options="{'no_create': True}"/>
+                                <field name="sec_code" optional="hide"/>
+                                <field name="quantity"/>
+                                <field name="uom_id" options="{'no_create': True}"/>
+                                <field name="confidence" optional="show"/>
+                                <field name="issue_text"/>
+                                <field name="usable" column_invisible="1"/>
+                            </list>
+                        </field>
+                    </div>
+                </div>
+                <footer>
+                    <button name="action_extract" type="object" string="استخراج المواد" class="btn-primary" invisible="state != 'upload'"/>
+                    <button name="action_apply" type="object" string="إضافة الأسطر المختارة إلى المستند" class="btn-success" invisible="state != 'preview'"/>
+                    <button special="cancel" string="إلغاء"/>
+                </footer>
+            </form>
+        </field>
+    </record>
 </odoo>

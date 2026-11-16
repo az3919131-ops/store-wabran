@@ -308,3 +308,127 @@ class AlwabrnWOImportWizard(models.TransientModel):
                 len(items), stats["work_orders_new"], stats["work_orders_updated"], stats["rows_new"],
                 stats["rows_updated"], ("ملاحظات:\n- " + "\n- ".join(problems)) if problems else ""))})
         return {"type": "ir.actions.act_window", "res_model": self._name, "res_id": self.id, "view_mode": "form", "target": "new"}
+
+
+TARGETS = {"alwabrn.transaction": "line_ids", "alwabrn.daily.snapshot": "line_ids"}
+
+
+class AlwabrnLineImportWizard(models.TransientModel):
+    """استيراد أسطر المواد إلى مستند مسودة (حركة صرف/استلام/إرجاع… أو كشف رصيد) من Excel أو صورة أو كاميرا الجوال.
+    المحرك نفسه المستخدم في «الإدخال الذكي»؛ لا يُرحَّل شيء — الأسطر تضاف للمسودة ثم تمر بالاعتماد المعتاد."""
+    _name = "alwabrn.line.import.wizard"
+    _description = "استيراد أسطر المواد إلى المستند"
+
+    res_model = fields.Char(required=True)
+    res_id = fields.Integer(required=True)
+    method = fields.Selection([("excel", "ملف Excel / CSV"), ("image", "صورة أو PDF"), ("camera", "كاميرا الجوال")],
+                              "الطريقة", required=True, default="excel")
+    file = fields.Binary("الملف / الصورة")
+    filename = fields.Char()
+    state = fields.Selection([("upload", "رفع"), ("preview", "معاينة")], default="upload")
+    line_ids = fields.One2many("alwabrn.line.import.wizard.line", "wizard_id", "الأسطر المستخرجة")
+    message = fields.Text("ملاحظات", readonly=True)
+    preview_image = fields.Binary("الصورة", readonly=True)
+
+    def _target(self):
+        self.ensure_one()
+        if self.res_model not in TARGETS:
+            raise UserError("مستند غير مدعوم.")
+        rec = self.env[self.res_model].browse(self.res_id).exists()
+        if not rec:
+            raise UserError("المستند غير موجود.")
+        if rec.state != "draft":
+            raise UserError("يمكن إضافة الأسطر لمستند في حالة «مسودة» فقط.")
+        return rec
+
+    def _reopen(self):
+        return {"type": "ir.actions.act_window", "res_model": self._name, "res_id": self.id,
+                "view_mode": "form", "target": "new", "name": dict(self._fields["method"].selection)[self.method]}
+
+    def action_extract(self):
+        self.ensure_one()
+        target = self._target()
+        if not self.file:
+            raise UserError("اختر الملف أو التقط الصورة أولاً.")
+        name = self.filename or ("camera.jpg" if self.method == "camera" else "upload")
+        low = name.lower()
+        if self.method == "excel" and not low.endswith((".xlsx", ".xls", ".csv")):
+            raise UserError("اختر ملف Excel أو CSV.")
+        channel = {"excel": "excel", "image": "pdf" if low.endswith(".pdf") else "image", "camera": "camera"}[self.method]
+        doc = self.env["alwabrn.source.document"].create({"name": name, "datas": self.file, "channel": channel})
+        batch = self.env["alwabrn.import.batch"].create({"channel": channel, "content_type": "book_balance",
+                                                         "subject": "استيراد إلى %s" % target.display_name})
+        try:
+            batch.load_document(doc)
+            batch.action_validate()
+            vals = []
+            for l in batch.line_ids:
+                codes = set(filter(None, (l.issue_codes or "").split(",")))
+                usable = bool(l.product_id) and l.quantity > 0 and not (codes & {"unit_incompatible", "bad_unit"})
+                vals.append((0, 0, {"raw_text": l.raw_text, "sec_code": l.sec_code, "product_id": l.product_id.id,
+                                    "quantity": l.quantity, "uom_id": l.uom_id.id or l.product_id.uom_id.id,
+                                    "confidence": l.confidence, "issue_text": l.issue_text,
+                                    "include": usable and l.status == "ok", "usable": usable}))
+            msg = batch.error_message or ""
+            self.line_ids.unlink()
+            self.write({"line_ids": vals, "state": "preview", "message": msg or False,
+                        "preview_image": self.file if channel in ("image", "camera") else False})
+            target.write({"source_document_ids": [(4, doc.id)]})
+        finally:
+            doc.batch_id = False
+            batch.sudo().unlink()
+        if not self.line_ids:
+            self.message = (self.message or "") + "\nلم يُعثر على أسطر بها كود SEC وكمية."
+        return self._reopen()
+
+    def action_apply(self):
+        self.ensure_one()
+        target = self._target()
+        chosen = self.line_ids.filtered(lambda l: l.include)
+        if not chosen:
+            raise UserError("لم تختر أي سطر. علّم «إضافة» للأسطر المطلوبة.")
+        bad = chosen.filtered(lambda l: not l.product_id or l.quantity <= 0)
+        if bad:
+            raise UserError("أسطر بدون مادة أو كمية: %s" % ", ".join(bad.mapped(lambda l: l.raw_text or l.sec_code or "?")))
+        cmds = []
+        existing = {(l.product_id.id, l.uom_id.id): l for l in target.line_ids}
+        for l in chosen:
+            uom = l.uom_id or l.product_id.uom_id
+            if not uom._has_common_reference(l.product_id.uom_id):
+                raise UserError("الوحدة %s غير متوافقة مع المادة %s." % (uom.name, l.product_id.display_name))
+            key = (l.product_id.id, uom.id)
+            if self.res_model == "alwabrn.daily.snapshot" and key in existing:
+                cmds.append((1, existing[key].id, {"quantity": existing[key].quantity + l.quantity}))
+            elif self.res_model == "alwabrn.daily.snapshot" and any(p == l.product_id.id for p, _u in existing):
+                raise UserError("المادة %s موجودة في الكشف بوحدة أخرى." % l.product_id.display_name)
+            else:
+                cmds.append((0, 0, {"product_id": l.product_id.id, "quantity": l.quantity, "uom_id": uom.id}))
+                existing[key] = None if self.res_model == "alwabrn.transaction" else existing.get(key)
+        target.write({"line_ids": cmds})
+        target.message_post(body="أُضيف %s سطراً من %s%s" % (
+            len(chosen), dict(self._fields["method"].selection)[self.method],
+            (" (%s)" % self.filename) if self.filename else ""))
+        return {"type": "ir.actions.act_window_close"}
+
+
+class AlwabrnLineImportWizardLine(models.TransientModel):
+    _name = "alwabrn.line.import.wizard.line"
+    _description = "سطر مستخرج"
+
+    wizard_id = fields.Many2one("alwabrn.line.import.wizard", ondelete="cascade")
+    include = fields.Boolean("إضافة")
+    usable = fields.Boolean()
+    raw_text = fields.Char("النص الأصلي", readonly=True)
+    sec_code = fields.Char("كود SEC")
+    product_id = fields.Many2one("product.product", "المادة", domain=[("alw_is_material", "=", True)])
+    quantity = fields.Float("الكمية", digits="Product Unit")
+    uom_id = fields.Many2one("uom.uom", "الوحدة")
+    confidence = fields.Float("الثقة %", readonly=True)
+    issue_text = fields.Char("ملاحظات", readonly=True)
+
+    @api.onchange("product_id")
+    def _onchange_product(self):
+        if self.product_id:
+            self.sec_code = self.product_id.alw_sec_code
+            if not self.uom_id or not self.uom_id._has_common_reference(self.product_id.uom_id):
+                self.uom_id = self.product_id.uom_id

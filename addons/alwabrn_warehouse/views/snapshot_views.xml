@@ -20,6 +20,9 @@
                     <button name="action_approve" type="object" string="اعتماد الكشف" class="btn-primary" invisible="state != 'draft'"
                             groups="alwabrn_warehouse.group_alw_manager"/>
                     <button name="action_reconcile" type="object" string="مطابقة مع رصيد Odoo" class="btn-success" invisible="state != 'approved'"/>
+                    <button name="action_import_excel" type="object" string="استيراد Excel" icon="fa-file-excel-o" invisible="state != 'draft'"/>
+                    <button name="action_import_image" type="object" string="استيراد صورة / PDF" icon="fa-picture-o" invisible="state != 'draft'"/>
+                    <button name="action_import_camera" type="object" string="تصوير بالكاميرا" icon="fa-camera" invisible="state != 'draft'"/>
                     <button name="action_cancel" type="object" string="إلغاء" invisible="state == 'cancelled'" groups="alwabrn_warehouse.group_alw_manager"/>
                     <field name="state" widget="statusbar" statusbar_visible="draft,approved"/>
                 </header>
