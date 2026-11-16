@@ -37,6 +37,26 @@ import os
 pw = os.environ["ALW_PW"].strip()
 admin = env.ref("base.user_admin")
 admin.write({"login": "admin", "password": pw, "active": True})
+# Hosts without a persistent disk (Render free plan): keep every file (photos, Excel, PDF,
+# web assets) inside PostgreSQL so nothing is lost when the container restarts.
+if os.environ.get("ALW_ATTACHMENTS_IN_DB", "1") == "1":
+    env["ir.config_parameter"].sudo().set_param("ir_attachment.location", "db")
+    Att = env["ir.attachment"].sudo().with_context(active_test=False)
+    Att.search([("url", "=like", "/web/assets/%")]).unlink()   # regenerated on demand
+    env.cr.execute("SELECT id, store_fname FROM ir_attachment WHERE store_fname IS NOT NULL AND db_datas IS NULL")
+    lost = 0
+    for att_id, fname in env.cr.fetchall():
+        att = Att.browse(att_id)
+        if os.path.exists(Att._full_path(fname)):
+            att.write({"raw": att.raw})                          # move file into the database
+        else:
+            lost += 1
+            att.unlink()                                         # file is gone: drop the dead reference
+    if lost:
+        for menu in env["ir.ui.menu"].sudo().with_context(active_test=False).search([("web_icon", "!=", False)]):
+            menu.write({"web_icon": menu.web_icon})              # rebuild app icons from the addon files
+        env["res.company"].sudo().search([])._update_asset_style()
+    print("ATTACHMENTS_IN_DB=ON missing_files_cleaned=%s" % lost)
 env.cr.commit()
 try:
     env["res.users"].sudo()._login({"type": "password", "login": "admin", "password": pw}, {"interactive": False})
