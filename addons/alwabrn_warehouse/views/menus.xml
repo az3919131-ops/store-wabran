@@ -8,6 +8,10 @@
         <field name="name">لوحة تحليل المخزون والتقارير</field>
         <field name="tag">alwabrn_analytics</field>
     </record>
+    <record id="action_explorer" model="ir.actions.client">
+        <field name="name">لوحة المواد وأوامر العمل</field>
+        <field name="tag">alwabrn_explorer</field>
+    </record>
     <record id="action_camera" model="ir.actions.client">
         <field name="name">تصوير دفتر المواد</field>
         <field name="tag">alwabrn_camera</field>
@@ -35,6 +39,8 @@
     <menuitem id="menu_root" name="IltizamSMART" sequence="1" web_icon="alwabrn_warehouse,static/description/icon.png"
               groups="group_alw_auditor,group_alw_supervisor,group_alw_employee"/>
     <menuitem id="menu_home" name="الرئيسية" parent="menu_root" sequence="1" action="action_dashboard"/>
+    <menuitem id="menu_explorer" name="لوحة المواد وأوامر العمل" parent="menu_root" sequence="1" action="action_explorer"
+              groups="group_alw_auditor,group_alw_employee"/>
     <menuitem id="menu_materials" name="المواد والأصناف" parent="menu_root" sequence="2" action="action_materials"
               groups="group_alw_auditor,group_alw_employee"/>
     <menuitem id="menu_balance" name="الرصيد الحالي" parent="menu_root" sequence="3" groups="group_alw_auditor,group_alw_employee"/>
@@ -66,6 +72,7 @@
     <menuitem id="menu_recon_list" name="المطابقة والحصر الدفتري" parent="menu_recon" sequence="1" action="action_recon"/>
     <menuitem id="menu_recon_lines" name="فروقات الجرد" parent="menu_recon" sequence="2" action="action_recon_lines"/>
     <menuitem id="menu_reports" name="التقارير والتحليل" parent="menu_root" sequence="11" groups="group_alw_auditor,group_alw_employee"/>
+    <menuitem id="menu_reports_explorer" name="لوحة المواد وأوامر العمل" parent="menu_reports" sequence="0" action="action_explorer"/>
     <menuitem id="menu_analytics" name="لوحة تحليل المخزون" parent="menu_reports" sequence="1" action="action_analytics"/>
     <menuitem id="menu_report_wizard" name="تصدير وإرسال تقرير" parent="menu_reports" sequence="2" action="action_report_wizard"/>
     <menuitem id="menu_assistant" name="مساعد الوبران الذكي" parent="menu_reports" sequence="3" action="action_assistant"/>
@@ -85,4 +92,11 @@
     <menuitem id="menu_settings_opening" name="إدخال رصيد افتتاحي" parent="menu_settings" sequence="3" action="action_tx_new_opening"/>
     <menuitem id="menu_settings_locations" name="المواقع المخزنية" parent="menu_settings" sequence="4" action="action_locations" groups="group_alw_admin"/>
     <menuitem id="menu_settings_uom" name="وحدات القياس" parent="menu_settings" sequence="5" action="action_uoms" groups="group_alw_admin"/>
+    <!-- تطبيق «المخزون» الأصلي: لوحة المواد وأوامر العمل أول صفحة، وتقاريرنا ضمن «إعداد التقارير» -->
+    <menuitem id="menu_stock_explorer" name="لوحة المواد وأوامر العمل" parent="stock.menu_stock_root" sequence="-10"
+              action="action_explorer"/>
+    <menuitem id="menu_stock_report_explorer" name="لوحة المواد وأوامر العمل" parent="stock.menu_warehouse_report" sequence="1"
+              action="action_explorer"/>
+    <menuitem id="menu_stock_report_wizard" name="تقارير الوبران (Excel / PDF)" parent="stock.menu_warehouse_report" sequence="2"
+              action="action_report_wizard"/>
 </odoo>

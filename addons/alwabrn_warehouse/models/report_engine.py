@@ -33,6 +33,7 @@ REPORTS = [
     ("audit", "سجل التدقيق"),
     ("executive", "الملخص التنفيذي للإدارة"),
     ("work_order", "تقرير أمر العمل: المستلم والمصروف والمسلّم والمنفذ والراجع"),
+    ("material_ledger", "حركة مادة: الرصيد والمستلم والمسلّم والراجع لكل أمر عمل"),
 ]
 
 
@@ -272,6 +273,10 @@ class AlwabrnReportEngine(models.AbstractModel):
         installed, returned to warehouse, returned to SEC and balance at site. All dates (no period cut)."""
         WO = self.env["alwabrn.work.order"].sudo()
         dom = [("id", "=", f["work_order_id"])] if f.get("work_order_id") else [("material_ids", "!=", False)]
+        if f.get("stage"):
+            dom.append(("stage", "=", f["stage"]))
+        if f.get("product_id"):
+            dom.append(("material_ids.product_id", "=", f["product_id"]))
         cols = [("wo", "أمر العمل", "text"), ("type", "نوع أمر العمل", "text"), ("sec", "كود SEC", "text"),
                 ("desc", "الوصف", "text"), ("uom", "الوحدة", "text"),
                 ("rec", "مستلم من الكهرباء", "qty"), ("iss_sec", "مصروف من الكهرباء ISSUE (محضر)", "qty"),
@@ -281,7 +286,7 @@ class AlwabrnReportEngine(models.AbstractModel):
         rows = []
         orders = WO.search(dom, order="name")
         for wo in orders:
-            for m in wo.material_ids.sorted("sec_code"):
+            for m in wo.material_ids.sorted("sec_code").filtered(lambda m: not f.get("product_id") or m.product_id.id == f["product_id"]):
                 rows.append({"wo": wo.name, "type": wo.type_summary or "", "sec": m.sec_code, "desc": m.name or "",
                              "uom": m.uom_id.name or m.unit_text or "", "rec": m.wh_received, "iss_sec": m.sec_issued,
                              "iss": m.wh_issued, "erc": m.erected, "ret": m.wh_returned, "ret_sec": m.wh_returned_sec,
@@ -294,6 +299,46 @@ class AlwabrnReportEngine(models.AbstractModel):
                 ("المقاول", wo.contractor or "—"), ("الموقع", wo.location or "—"), ("الموقف", wo.status_note or "—"),
                 ("محاضر الاستلام", wo.minutes_count), ("حركات المستودع", wo.tx_count)]
         summary.append(("ملاحظة", "المنفذ = حسب المحضر أو الاستهلاك المسجل أيهما أكبر · الباقي بالموقع = المسلّم − الراجع − المنفذ"))
+        return cols, rows, summary
+
+    def _r_material_ledger(self, f):
+        """For one material (or all moved materials): balances and, per work order, received / delivered /
+        installed / returned within the period. Rows without a work order are grouped as «بدون أمر عمل»."""
+        from .explorer import BUCKET
+        Line = self.env["alwabrn.transaction.line"].sudo()
+        dom = [("state", "=", "posted"), ("date", ">=", f["dt_from"]), ("date", "<=", f["dt_to"])]
+        for k in ("product_id", "work_order_id", "site_id"):
+            if f.get(k):
+                dom.append((k, "=", f[k]))
+        if f.get("categ_id"):
+            dom.append(("product_id.categ_id", "child_of", f["categ_id"]))
+        if f.get("stage"):
+            dom.append(("work_order_id.stage", "=", f["stage"]))
+        agg = {}
+        for product, wo, tx_type, qty in Line._read_group(dom, ["product_id", "work_order_id", "tx_type"], ["qty_product_uom:sum"]):
+            d = agg.setdefault((product, wo), dict.fromkeys(("rec", "iss", "con", "ret", "rsec", "oth"), 0.0))
+            k = BUCKET.get(tx_type, "oth")
+            k = "rec" if k == "open" else k if k in d else "oth"
+            d[k] += qty
+        cols = [("sec", "كود SEC", "text"), ("desc", "الوصف", "text"), ("uom", "الوحدة", "text"), ("wo", "أمر العمل", "text"),
+                ("stage", "مرحلة الأمر", "text"), ("rec", "مستلم من الكهرباء", "qty"), ("iss", "مسلّم للموقع", "qty"),
+                ("con", "منفذ / مستهلك", "qty"), ("ret", "راجع للمستودع", "qty"), ("rsec", "مرتجع للكهرباء", "qty"),
+                ("oth", "تالف/سكراب/تسويات", "qty"), ("net", "صافي بالموقع", "qty")]
+        stages = dict(self.env["alwabrn.work.order"]._fields["stage"]._description_selection(self.env))
+        rows = []
+        for (p, wo), d in sorted(agg.items(), key=lambda x: (x[0][0].alw_sec_code or "", x[0][1].name or "")):
+            rows.append({"sec": p.alw_sec_code or "", "desc": p.name, "uom": p.uom_id.name, "wo": wo.name or "بدون أمر عمل",
+                         "stage": stages.get(wo.stage, "") if wo else "", **d, "net": d["iss"] - d["ret"] - d["con"]})
+        summary = [("عدد البنود", len(rows))]
+        if f.get("product_id"):
+            p = self.env["product.product"].browse(f["product_id"])
+            t = p.product_tmpl_id
+            summary = [("المادة", "%s — %s" % (p.alw_sec_code or "", p.name)), ("الوحدة", p.uom_id.name),
+                       ("رصيد المستودع الحالي", t.alw_qty_warehouse), ("بعهدة المواقع", t.alw_qty_custody),
+                       ("إجمالي عهدة الشركة", t.alw_qty_total)] + summary
+            for k, lbl in (("rec", "إجمالي المستلم"), ("iss", "إجمالي المسلّم"), ("con", "إجمالي المنفذ"),
+                           ("ret", "إجمالي الراجع"), ("rsec", "إجمالي المرتجع للكهرباء")):
+                summary.append((lbl + " (الفترة)", sum(r[k] for r in rows)))
         return cols, rows, summary
 
     def _r_executive(self, f):
@@ -320,6 +365,8 @@ class AlwabrnReportEngine(models.AbstractModel):
                 parts.append("%s: %s" % (label, self.env[model].sudo().browse(f[key]).display_name))
         if f.get("work_order"):
             parts.append("أمر العمل: %s" % f["work_order"])
+        if f.get("stage"):
+            parts.append("المرحلة: %s" % dict(self.env["alwabrn.work.order"]._fields["stage"]._description_selection(self.env)).get(f["stage"], f["stage"]))
         return "؛ ".join(parts) or "بدون فلاتر"
 
     @api.model

@@ -10,6 +10,7 @@ const KPI_ACTIONS = {
     materials: X + "action_materials", balance: X + "action_balance", in: X + "action_tx_in",
     out: X + "action_tx_out", custody: X + "action_custody", recon: X + "action_recon",
     diff: X + "action_recon_lines", batches: X + "action_batches", pending_tx: X + "action_tx_pending",
+    explorer: X + "action_explorer", work_orders: X + "action_work_orders",
 };
 const QUICK = [
     { label: "إدخال رصيد", icon: "fa-pencil-square-o", action: X + "action_snapshot_new", write: true },
@@ -21,6 +22,8 @@ const QUICK = [
     { label: "مطابقة الرصيد", icon: "fa-balance-scale", action: X + "action_recon_new", write: true },
     { label: "استخراج تقرير", icon: "fa-file-text-o", action: X + "action_report_wizard", write: false },
     { label: "المساعد الذكي", icon: "fa-comments-o", action: X + "action_assistant", write: false },
+    { label: "لوحة المواد وأوامر العمل", icon: "fa-tachometer", action: X + "action_explorer", write: false },
+    { label: "أوامر العمل", icon: "fa-clipboard", action: X + "action_work_orders", write: false },
 ];
 
 class AlwBase extends Component {

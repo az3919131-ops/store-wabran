@@ -224,3 +224,37 @@ class TestWorkOrders(AlwCase):
         posted = self.tx("receipt", self.ea, 1)
         with self.assertRaises(UserError):
             self._wiz(posted, "excel", self.xlsx([(int(self.ea.alw_sec_code), 1, "EA")]), "x.xlsx").action_extract()
+
+    def test_10_explorer_dashboard_and_material_report(self):
+        X = self.env["alwabrn.explorer"].with_user(self.auditor)
+        wo = self.env["alwabrn.work.order"].create({"name": "254099777", "stage": "delivered"})
+        site = wo._ensure_site()
+        p = self.ea
+        self.tx("receipt", p, 50, work_order_id=wo.id)
+        self.tx("issue_site", p, 30, site=site, work_order_id=wo.id)
+        self.tx("return_in", p, 10, site=site, work_order_id=wo.id)
+        self.tx("issue", p, 5)                                               # no work order
+        data = X.get_data({"sec_code": p.alw_sec_code})
+        self.assertTrue(data["single"])
+        row = data["materials"][0]
+        self.assertEqual((row["warehouse"], row["custody"], row["rec"], row["iss"], row["ret"]), (25, 20, 50, 35, 10))
+        k = {x["key"]: x["display"] for x in data["kpis"]}
+        self.assertTrue(k["wh"].startswith("25"))
+        wrow = [w for w in data["work_orders"] if w["name"] == wo.name][0]
+        self.assertEqual((wrow["q"]["iss"], wrow["q"]["ret"]), (30, 10))
+        # stage filter + work order filter
+        self.assertEqual(X.get_data({"stage": "drawing", "sec_code": p.alw_sec_code})["wo_total"], 0)
+        data = X.get_data({"wo_text": wo.name})
+        self.assertEqual([r["iss"] for r in data["materials"] if r["id"] == p.id], [30])
+        self.assertIn("غير موجود", X.get_data({"sec_code": "999999999"})["filters"]["not_found"])
+        # material ledger report: per work order + rows without work order
+        rep = self.env["alwabrn.report.engine"].get_report("material_ledger", {"product_id": p.id, "date_from": "2015-01-01"})
+        by_wo = {r["wo"]: r for r in rep["rows"]}
+        self.assertEqual((by_wo[wo.name]["rec"], by_wo[wo.name]["iss"], by_wo[wo.name]["ret"], by_wo[wo.name]["net"]), (50, 30, 10, 20))
+        self.assertEqual(by_wo["بدون أمر عمل"]["iss"], 5)
+        # stage filter on the work order report
+        self.assertEqual(self.env["alwabrn.report.engine"].get_report("work_order", {"stage": "extract"})["rows"], [])
+        self.assertTrue(self.env["alwabrn.report.engine"].get_report("work_order", {"stage": "delivered", "product_id": p.id})["rows"])
+        urls = self.env["alwabrn.explorer"].export("material_ledger", {"sec_code": p.alw_sec_code}, "xlsx")
+        self.assertEqual(len(urls), 1)
+        self.assertIn("/web/content/", urls[0])

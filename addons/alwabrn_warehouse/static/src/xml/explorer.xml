@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="alwabrn_warehouse.Explorer">
+        <div class="alw_page o_action alw_explorer" dir="rtl" t-ref="root">
+            <div class="alw_header">
+                <div>
+                    <h1>لوحة المواد وأوامر العمل</h1>
+                    <div class="alw_sub">رصيد كل مادة · المستلم والمسلّم والمنفذ والراجع · أوامر العمل ومواقفها — مباشرة من سجلات Odoo</div>
+                </div>
+                <div class="alw_export_bar">
+                    <div class="btn-group">
+                        <button class="btn btn-light" t-on-click="() => this.exportReport('material_ledger', 'xlsx')"><i class="fa fa-file-excel-o"/> حركة المواد Excel</button>
+                        <button class="btn btn-light" t-on-click="() => this.exportReport('material_ledger', 'pdf')"><i class="fa fa-file-pdf-o"/> PDF</button>
+                    </div>
+                    <div class="btn-group">
+                        <button class="btn btn-light" t-on-click="() => this.exportReport('work_order', 'xlsx')"><i class="fa fa-file-excel-o"/> أوامر العمل Excel</button>
+                        <button class="btn btn-light" t-on-click="() => this.exportReport('work_order', 'pdf')"><i class="fa fa-file-pdf-o"/> PDF</button>
+                    </div>
+                    <div class="btn-group">
+                        <button class="btn btn-light" t-on-click="() => this.exportReport('current_stock', 'xlsx')"><i class="fa fa-file-excel-o"/> الرصيد Excel</button>
+                        <button class="btn btn-light" t-on-click="() => this.exportReport('current_stock', 'pdf')"><i class="fa fa-file-pdf-o"/> PDF</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="alw_filters">
+                <label>من <input type="date" class="form-control" t-model="state.f.date_from"/></label>
+                <label>إلى <input type="date" class="form-control" t-model="state.f.date_to"/></label>
+                <label>كود المادة SEC <input type="text" class="form-control" inputmode="numeric" placeholder="908111006" t-model="state.f.sec_code" t-on-keydown="(e) => e.key === 'Enter' and this.apply()"/></label>
+                <label>فئة المواد
+                    <select class="form-select" t-model="state.f.categ_id"><option value="">الكل</option>
+                        <t t-foreach="state.opts.categories" t-as="c" t-key="c.id"><option t-att-value="c.id" t-out="c.name"/></t></select></label>
+                <label>رقم أمر العمل <input type="text" class="form-control" inputmode="numeric" t-model="state.f.wo_text" t-on-keydown="(e) => e.key === 'Enter' and this.apply()"/></label>
+                <label>موقف / مرحلة أمر العمل
+                    <select class="form-select" t-model="state.f.stage"><option value="">الكل</option>
+                        <t t-foreach="state.opts.stages" t-as="s" t-key="s[0]"><option t-att-value="s[0]" t-out="s[1]"/></t></select></label>
+                <label>نوع الحركة
+                    <select class="form-select" t-model="state.f.tx_type"><option value="">الكل</option>
+                        <t t-foreach="state.opts.tx_types" t-as="t" t-key="t[0]"><option t-att-value="t[0]" t-out="t[1]"/></t></select></label>
+                <label>بحث في أوامر العمل <input type="text" class="form-control" placeholder="مقاول / موقف" t-model="state.f.wo_search" t-on-keydown="(e) => e.key === 'Enter' and this.apply()"/></label>
+                <div class="alw_filter_btns">
+                    <button class="btn btn-primary" t-on-click="() => this.apply()" t-att-disabled="state.busy"><i t-attf-class="fa #{state.busy ? 'fa-spinner fa-spin' : 'fa-filter'}"/> تطبيق</button>
+                    <button class="btn btn-outline-secondary" t-on-click="() => this.reset()">مسح الفلاتر</button>
+                </div>
+            </div>
+
+            <div t-if="state.data.filters.product or state.data.filters.work_order" class="alw_chips">
+                <span t-if="state.data.filters.product" class="badge text-bg-success">المادة: <t t-out="state.data.filters.product"/></span>
+                <span t-if="state.data.filters.work_order" class="badge text-bg-primary">أمر العمل: <t t-out="state.data.filters.work_order"/></span>
+            </div>
+
+            <div class="alw_kpis">
+                <t t-foreach="state.data.kpis" t-as="k" t-key="k.key">
+                    <div t-attf-class="alw_kpi alw_tone_#{k.tone}">
+                        <div class="alw_kpi_value" t-out="k.display"/>
+                        <div class="alw_kpi_label" t-out="k.label"/>
+                    </div>
+                </t>
+            </div>
+
+            <div class="alw_charts">
+                <div class="alw_chart alw_wide"><h4>الحركة الشهرية (<t t-out="state.data.charts.monthly.unit"/>)</h4><div class="alw_canvas"><canvas data-chart="monthly"/></div></div>
+                <div class="alw_chart"><h4>أوامر العمل حسب المرحلة / الموقف</h4><div class="alw_canvas"><canvas data-chart="stages"/></div></div>
+                <div class="alw_chart"><h4>أكثر المواد صرفاً (بنود)</h4><div class="alw_canvas"><canvas data-chart="top_materials"/></div></div>
+                <div class="alw_chart"><h4>أكثر أوامر العمل صرفاً (بنود)</h4><div class="alw_canvas"><canvas data-chart="top_wos"/></div></div>
+                <div class="alw_chart"><h4>قيمة رصيد المستودع حسب الفئة (ر.س مرجعية)</h4><div class="alw_canvas"><canvas data-chart="categories"/></div></div>
+            </div>
+
+            <ul class="nav nav-tabs mt-3">
+                <li class="nav-item"><a href="#" t-attf-class="nav-link #{state.tab === 'materials' ? 'active' : ''}" t-on-click.prevent="() => state.tab = 'materials'">
+                    المواد (<t t-out="state.data.materials_total"/>)</a></li>
+                <li class="nav-item"><a href="#" t-attf-class="nav-link #{state.tab === 'work_orders' ? 'active' : ''}" t-on-click.prevent="() => state.tab = 'work_orders'">
+                    أوامر العمل (<t t-out="state.data.wo_total"/>)</a></li>
+            </ul>
+
+            <div t-if="state.tab === 'materials'" class="alw_table_wrap">
+                <input type="text" class="form-control my-2" placeholder="تصفية سريعة بالكود أو الوصف…" t-model="state.matQuery"/>
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover alw_table">
+                        <thead><tr>
+                            <th>كود SEC</th><th>المادة</th><th>الوحدة</th><th>المستودع</th><th>بالعهد</th><th>الإجمالي</th>
+                            <th>مستلم</th><th>مسلّم للمواقع</th><th>منفذ</th><th>راجع</th><th>مرتجع للكهرباء</th><th>القيمة (ر.س)</th><th>تقرير</th>
+                        </tr></thead>
+                        <tbody>
+                            <t t-foreach="materials" t-as="r" t-key="r.id">
+                                <tr class="alw_click" t-on-click="() => this.pickMaterial(r)" title="اضغط لعرض أوامر العمل لهذه المادة">
+                                    <td><b t-out="r.sec"/></td><td t-out="r.name"/><td t-out="r.uom"/>
+                                    <td t-out="fmt(r.warehouse)"/><td t-out="fmt(r.custody)"/><td><b t-out="fmt(r.total)"/></td>
+                                    <td t-out="fmt(r.rec)"/><td t-out="fmt(r.iss)"/><td t-out="fmt(r.con)"/><td t-out="fmt(r.ret)"/><td t-out="fmt(r.rsec)"/>
+                                    <td t-out="fmt(r.value)"/>
+                                    <td class="text-nowrap" t-on-click.stop="">
+                                        <button class="btn btn-sm btn-link" title="كرت الصنف" t-on-click="() => this.openStockCard(r)"><i class="fa fa-list"/></button>
+                                        <button class="btn btn-sm btn-link" title="Excel" t-on-click="() => this.exportReport('material_ledger', 'xlsx', {sec_code: r.sec})"><i class="fa fa-file-excel-o"/></button>
+                                        <button class="btn btn-sm btn-link" title="PDF" t-on-click="() => this.exportReport('material_ledger', 'pdf', {sec_code: r.sec})"><i class="fa fa-file-pdf-o"/></button>
+                                    </td>
+                                </tr>
+                            </t>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="text-muted small">الكميات بوحدة كل مادة (لا تُجمع وحدات مختلفة). اضغط على مادة لعرض أوامر العمل الخاصة بها.</div>
+            </div>
+
+            <div t-if="state.tab === 'work_orders'" class="alw_table_wrap">
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover alw_table">
+                        <thead><tr>
+                            <th>أمر العمل</th><th>النوع</th><th>المرحلة</th><th>الموقف</th><th>المقاول</th><th>محاضر</th>
+                            <th t-out="state.data.single ? 'مستلم' : 'بنود استلام'"/><th t-out="state.data.single ? 'مسلّم' : 'بنود صرف'"/>
+                            <th t-out="state.data.single ? 'منفذ' : 'بنود تنفيذ'"/><th t-out="state.data.single ? 'راجع' : 'بنود إرجاع'"/><th>تقرير</th>
+                        </tr></thead>
+                        <tbody>
+                            <t t-foreach="state.data.work_orders" t-as="w" t-key="w.id">
+                                <tr class="alw_click" t-on-click="() => this.pickWO(w)" title="اضغط لعرض مواد أمر العمل">
+                                    <td><b t-out="w.name"/></td><td t-out="w.type"/><td><span class="badge text-bg-light" t-out="w.stage"/></td>
+                                    <td class="alw_note" t-out="w.status"/><td t-out="w.contractor"/><td t-out="w.minutes"/>
+                                    <td t-out="state.data.single ? fmt(w.q.rec) : w.rec"/><td t-out="state.data.single ? fmt(w.q.iss) : w.iss"/>
+                                    <td t-out="state.data.single ? fmt(w.q.con) : w.con"/><td t-out="state.data.single ? fmt(w.q.ret) : w.ret"/>
+                                    <td class="text-nowrap" t-on-click.stop="">
+                                        <button class="btn btn-sm btn-link" title="فتح أمر العمل" t-on-click="() => this.openWO(w)"><i class="fa fa-external-link"/></button>
+                                        <button class="btn btn-sm btn-link" title="Excel" t-on-click="() => this.exportReport('work_order', 'xlsx', {wo_text: w.name})"><i class="fa fa-file-excel-o"/></button>
+                                        <button class="btn btn-sm btn-link" title="PDF" t-on-click="() => this.exportReport('work_order', 'pdf', {wo_text: w.name})"><i class="fa fa-file-pdf-o"/></button>
+                                    </td>
+                                </tr>
+                            </t>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="text-muted small">يُعرض أول 150 أمر عمل ضمن الفلتر — استخدم فلتر المرحلة أو البحث للتضييق. التصدير يشمل كل أوامر العمل ضمن الفلتر.</div>
+            </div>
+            <div class="alw_footer" t-out="footer"/>
+        </div>
+    </t>
+</templates>

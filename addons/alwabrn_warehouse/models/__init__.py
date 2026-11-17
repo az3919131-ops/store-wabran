@@ -10,6 +10,7 @@ from . import reconciliation
 from . import integration
 from . import work_order
 from . import line_import_mixin
+from . import explorer
 from . import sql_views
 from . import report_engine
 from . import report
