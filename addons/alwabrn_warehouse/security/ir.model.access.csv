@@ -158,3 +158,4 @@ access_alwabrn_line_import_wizard_admin,alwabrn.line.import.wizard admin,alwabrn
 access_alwabrn_line_import_wizard_line_employee,alwabrn.line.import.wizard.line employee,alwabrn_warehouse.model_alwabrn_line_import_wizard_line,group_alw_employee,1,1,1,1
 access_alwabrn_line_import_wizard_line_manager,alwabrn.line.import.wizard.line manager,alwabrn_warehouse.model_alwabrn_line_import_wizard_line,group_alw_manager,1,1,1,1
 access_alwabrn_line_import_wizard_line_admin,alwabrn.line.import.wizard.line admin,alwabrn_warehouse.model_alwabrn_line_import_wizard_line,group_alw_admin,1,1,1,1
+access_alwabrn_user_password_wizard_admin,alwabrn.user.password.wizard admin,alwabrn_warehouse.model_alwabrn_user_password_wizard,group_alw_admin,1,1,1,1

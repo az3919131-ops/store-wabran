@@ -36,7 +36,7 @@
         <field name="name">مدير النظام</field>
         <field name="sequence">50</field>
         <field name="privilege_id" ref="privilege_alwabrn"/>
-        <field name="implied_ids" eval="[(4, ref('group_alw_manager')), (4, ref('stock.group_stock_manager'))]"/>
+        <field name="implied_ids" eval="[(4, ref('group_alw_manager')), (4, ref('stock.group_stock_manager')), (4, ref('base.group_erp_manager'))]"/>
         <field name="user_ids" eval="[(4, ref('base.user_root')), (4, ref('base.user_admin'))]"/>
     </record>
 

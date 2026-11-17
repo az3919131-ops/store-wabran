@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- إدارة المستخدمين والصلاحيات (لمدير النظام فقط) -->
+    <record id="view_alw_users_search" model="ir.ui.view">
+        <field name="name">alwabrn.users.search</field>
+        <field name="model">res.users</field>
+        <field name="priority">100</field>
+        <field name="arch" type="xml">
+            <search string="المستخدمون">
+                <field name="name" string="الاسم"/>
+                <field name="login" string="اسم الدخول" groups="alwabrn_warehouse.group_alw_admin"/>
+                <filter name="f_admin" string="مدير النظام"
+                        domain="[('alw_role', '=', 'admin')]"/>
+                <filter name="f_manager" string="مدير المستودع"
+                        domain="[('alw_role', '=', 'manager')]"/>
+                <filter name="f_employee" string="موظف مستودع"
+                        domain="[('alw_role', '=', 'employee')]"/>
+                <filter name="f_supervisor" string="مشرف مشروع"
+                        domain="[('alw_role', '=', 'supervisor')]"/>
+                <filter name="f_auditor" string="مدقق"
+                        domain="[('alw_role', '=', 'auditor')]"/>
+                <filter name="f_none" string="بدون صلاحية" domain="[('alw_role', '=', 'none')]"/>
+                <separator/>
+                <filter name="f_archived" string="الحسابات الموقوفة" domain="[('active', '=', False)]"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="view_alw_users_list" model="ir.ui.view">
+        <field name="name">alwabrn.users.list</field>
+        <field name="model">res.users</field>
+        <field name="priority">100</field>
+        <field name="arch" type="xml">
+            <list string="المستخدمون والصلاحيات" decoration-muted="not active">
+                <field name="name" string="الاسم"/>
+                <field name="login" string="اسم الدخول" groups="alwabrn_warehouse.group_alw_admin"/>
+                <field name="alw_role" widget="badge"
+                       decoration-danger="alw_role == 'admin'" decoration-warning="alw_role == 'manager'"
+                       decoration-info="alw_role in ('employee', 'supervisor')" decoration-muted="alw_role == 'none'"/>
+                <field name="email" string="البريد" optional="show" groups="alwabrn_warehouse.group_alw_admin"/>
+                <field name="login_date" string="آخر دخول" optional="show" groups="alwabrn_warehouse.group_alw_admin"/>
+                <field name="active" string="نشط" widget="boolean_toggle" readonly="1" groups="alwabrn_warehouse.group_alw_admin"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_alw_users_form" model="ir.ui.view">
+        <field name="name">alwabrn.users.form</field>
+        <field name="model">res.users</field>
+        <field name="priority">100</field>
+        <field name="arch" type="xml">
+            <form string="مستخدم">
+                <header>
+                    <button name="action_alw_set_password" type="object" string="تعيين / إعادة تعيين كلمة المرور"
+                            class="btn-primary" icon="fa-key" invisible="not id"/>
+                    <button name="action_alw_archive" type="object" string="إيقاف الحساب" icon="fa-ban"
+                            invisible="not id or not active"
+                            confirm="سيتم منع هذا المستخدم من الدخول. متابعة؟"/>
+                    <button name="action_alw_restore" type="object" string="إعادة تفعيل الحساب" icon="fa-check"
+                            invisible="not id or active"/>
+                </header>
+                <sheet>
+                    <widget name="web_ribbon" title="موقوف" bg_color="text-bg-danger" invisible="active"/>
+                    <field name="active" invisible="1"/>
+                    <div class="oe_title">
+                        <label for="name" string="الاسم"/>
+                        <h1><field name="name" required="1" placeholder="اسم الموظف"/></h1>
+                    </div>
+                    <group>
+                        <group string="بيانات الدخول">
+                            <field name="login" string="اسم الدخول" required="1"
+                                   placeholder="مثال: ahmed أو البريد الإلكتروني"/>
+                            <field name="alw_new_password" password="True" invisible="id"
+                                   required="not id" placeholder="8 خانات على الأقل وتحتوي حرفًا ورقمًا"/>
+                            <field name="email" string="البريد الإلكتروني"/>
+                            <field name="login_date" string="آخر دخول" readonly="1" invisible="not id"/>
+                        </group>
+                        <group string="الصلاحية">
+                            <field name="alw_role" widget="radio" required="1"/>
+                            <field name="alw_site_ids" widget="many2many_tags"
+                                   invisible="alw_role != 'supervisor'"
+                                   options="{'no_create': True}"/>
+                        </group>
+                    </group>
+                    <div class="alert alert-info" role="alert">
+                        <b>صلاحيات كل دور:</b>
+                        <ul class="mb-0">
+                            <li><b>مدير النظام:</b> كل الصلاحيات + إدارة المستخدمين وكلمات المرور والإعدادات.</li>
+                            <li><b>مدير المستودع:</b> اعتماد وترحيل الحركات، التسويات الجردية، استيراد أوامر العمل، التقارير المجدولة.</li>
+                            <li><b>موظف مستودع:</b> إدخال الحركات والأرصدة اليومية، تصوير الدفاتر، الاستيراد — بدون اعتماد أو ترحيل.</li>
+                            <li><b>مشرف مشروع:</b> يرى مواقعه المحددة أعلاه وعهدها وحركاتها فقط.</li>
+                            <li><b>مدقق:</b> قراءة فقط لكل البيانات والتقارير، بلا أي تعديل.</li>
+                            <li><b>بدون صلاحية:</b> لا يرى نظام IltizamSMART.</li>
+                        </ul>
+                    </div>
+                    <div class="text-muted small">كلمات المرور تُحفظ مشفرة ولا يستطيع أحد — حتى مدير النظام — قراءتها؛ يمكن فقط تعيين كلمة جديدة. كل تغيير في الأدوار أو كلمات المرور يُسجَّل في «سجل التدقيق».</div>
+                    <div class="text-center text-muted small mt-3">Project manager  Eng  Ahmed Zahran</div>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_alw_user_password_wizard" model="ir.ui.view">
+        <field name="name">alwabrn.user.password.wizard.form</field>
+        <field name="model">alwabrn.user.password.wizard</field>
+        <field name="arch" type="xml">
+            <form string="تعيين كلمة مرور">
+                <group>
+                    <field name="user_id"/>
+                    <field name="new_password" password="True" required="1"
+                           placeholder="8 خانات على الأقل وتحتوي حرفًا ورقمًا"/>
+                    <field name="confirm_password" password="True" required="1"/>
+                </group>
+                <div class="text-muted small">أبلغ المستخدم بكلمة المرور بطريقة آمنة، ويمكنه تغييرها بنفسه من «تغيير كلمة المرور».</div>
+                <footer>
+                    <button name="action_apply" type="object" string="حفظ كلمة المرور" class="btn-primary"/>
+                    <button special="cancel" string="إلغاء"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_users" model="ir.actions.act_window">
+        <field name="name">المستخدمون والصلاحيات</field>
+        <field name="res_model">res.users</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('share', '=', False)]</field>
+        <field name="search_view_id" ref="view_alw_users_search"/>
+        <field name="group_ids" eval="[(4, ref('group_alw_admin'))]"/>
+        <field name="view_ids" eval="[(5, 0, 0),
+            (0, 0, {'view_mode': 'list', 'view_id': ref('view_alw_users_list')}),
+            (0, 0, {'view_mode': 'form', 'view_id': ref('view_alw_users_form')})]"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">أضف أول مستخدم</p>
+            <p>أنشئ حسابًا لكل موظف باسم دخول وكلمة مرور، واختر دوره في النظام.</p>
+        </field>
+    </record>
+
+    <record id="action_user_audit" model="ir.actions.act_window">
+        <field name="name">سجل تغييرات المستخدمين والصلاحيات</field>
+        <field name="res_model">alwabrn.approval</field>
+        <field name="view_mode">list</field>
+        <field name="domain">[('action', '=', 'user_admin')]</field>
+        <field name="group_ids" eval="[(4, ref('group_alw_admin'))]"/>
+    </record>
+
+    <!-- تغيير كلمة المرور الشخصية: متاح لكل مستخدم -->
+    <record id="action_my_password" model="ir.actions.act_window">
+        <field name="name">تغيير كلمة المرور</field>
+        <field name="res_model">change.password.own</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+</odoo>

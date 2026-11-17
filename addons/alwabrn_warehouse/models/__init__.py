@@ -16,3 +16,4 @@ from . import report_engine
 from . import report
 from . import dashboard
 from . import assistant
+from . import users

@@ -20,11 +20,6 @@
         <field name="name">مساعد الوبران الذكي</field>
         <field name="tag">alwabrn_assistant</field>
     </record>
-    <record id="action_users" model="ir.actions.act_window">
-        <field name="name">المستخدمون والصلاحيات</field>
-        <field name="res_model">res.users</field>
-        <field name="view_mode">list,form</field>
-    </record>
     <record id="action_locations" model="ir.actions.act_window">
         <field name="name">المواقع المخزنية</field>
         <field name="res_model">stock.location</field>
@@ -85,7 +80,10 @@
     <menuitem id="menu_comm_upload" name="رفع مرفق واتساب / بريد" parent="menu_comm" sequence="3" action="action_upload_wa" groups="group_alw_employee"/>
     <menuitem id="menu_comm_log" name="سجل الرسائل" parent="menu_comm" sequence="4" action="action_integration_messages"/>
     <menuitem id="menu_comm_settings" name="إعدادات الربط وحالته" parent="menu_comm" sequence="5" action="action_integrations" groups="group_alw_manager"/>
-    <menuitem id="menu_users" name="المستخدمون والصلاحيات" parent="menu_root" sequence="13" action="action_users" groups="group_alw_admin"/>
+    <menuitem id="menu_users" name="المستخدمون والصلاحيات" parent="menu_root" sequence="13" groups="group_alw_admin"/>
+    <menuitem id="menu_users_list" name="إدارة المستخدمين والأدوار" parent="menu_users" sequence="1" action="action_users"/>
+    <menuitem id="menu_users_audit" name="سجل تغييرات الصلاحيات" parent="menu_users" sequence="2" action="action_user_audit"/>
+    <menuitem id="menu_my_password" name="تغيير كلمة المرور" parent="menu_root" sequence="15" action="action_my_password"/>
     <menuitem id="menu_settings" name="الإعدادات" parent="menu_root" sequence="14" groups="group_alw_manager"/>
     <menuitem id="menu_settings_integrations" name="التكاملات" parent="menu_settings" sequence="1" action="action_integrations"/>
     <menuitem id="menu_settings_catalog" name="استيراد / فحص كتالوج المواد" parent="menu_settings" sequence="2" action="action_catalog_wizard"/>

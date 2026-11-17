@@ -18,6 +18,7 @@ class AlwabrnApproval(models.Model):
         ("reject", "رفض"), ("reverse", "عكس"), ("adjust", "تسوية جردية"),
         ("custody_confirm", "تأكيد عهدة"), ("import", "استيراد"), ("send", "إرسال تقرير"),
         ("config", "تعديل إعدادات"), ("duplicate_override", "تجاوز تحذير تكرار"),
+        ("user_admin", "إدارة المستخدمين والصلاحيات"),
     ], string="الإجراء", required=True, readonly=True, index=True)
     user_id = fields.Many2one("res.users", "المستخدم", required=True, readonly=True,
                               default=lambda s: s.env.user)
